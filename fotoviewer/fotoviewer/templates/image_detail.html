@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Foto Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static/main.css">
+  </head>
+  <body>
+    <div id="container">
+      <a href="/">&larr; Zurück</a>
+      <h2>{{ metadata.path }}</h2>
+      <img class="detail_image" src="/images/{{ metadata.path }}">
+      <div id="metadata">
+        <div><strong>Abmessungen:</strong> {{ metadata.width }} × {{ metadata.height }}</div>
+        <div><strong>Dateigröße:</strong> {{ (metadata.file_size_bytes / 1024) | round(1) }} KB</div>
+        <div><strong>Format:</strong> {{ metadata.format or "-" }}</div>
+        <div><strong>Aufnahmedatum:</strong> {{ metadata.date_taken or "-" }}</div>
+        {% set camera = [metadata.camera_make, metadata.camera_model] | select | join(" ") %}
+        <div><strong>Kamera:</strong> {{ camera if camera else "-" }}</div>
+      </div>
+    </div>
+  </body>
+</html>

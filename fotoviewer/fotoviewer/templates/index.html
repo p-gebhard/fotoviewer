@@ -15,37 +15,16 @@
           const container = document.getElementById("similar_images");
           container.innerHTML = "";
           data.response.forEach(image => {
+            const link = document.createElement("a");
+            link.href = "/image?path=" + encodeURIComponent(image.file);
             const img = document.createElement("img");
             img.className = "simimg";
             img.src = "/images/" + image.file;
-            img.addEventListener("click", () => show_metadata(image.file));
-            container.appendChild(img);
+            link.appendChild(img);
+            container.appendChild(link);
           });
         }
       })
-
-      function show_metadata(file) {
-        fetch("/api/images/metadata?path=" + encodeURIComponent(file))
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(response.status);
-            }
-            return response.json();
-          })
-          .then(data => {
-            const rows = [
-              ["Datei", data.path],
-              ["Abmessungen", `${data.width} × ${data.height}`],
-              ["Dateigröße", `${(data.file_size_bytes / 1024).toFixed(1)} KB`],
-              ["Format", data.format || "-"],
-              ["Aufnahmedatum", data.date_taken || "-"],
-              ["Kamera", [data.camera_make, data.camera_model].filter(Boolean).join(" ") || "-"],
-            ];
-            document.getElementById("metadata").innerHTML =
-              rows.map(([label, value]) => `<div><strong>${label}:</strong> ${value}</div>`).join("\n");
-          })
-          .catch(() => log("Metadaten konnten nicht geladen werden", "red"));
-      }
 
       function log(text, color) {
         document.getElementById("log").innerHTML = `<span style="color: ${color}">${text}</span><br>`;
@@ -92,8 +71,6 @@
       </div>
       <div id="similar_images">
       </div>
-      <h2>Metadata</h2>
-      <div id="metadata"></div>
     </div>
   </body>
 </html>

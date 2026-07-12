@@ -23,3 +23,11 @@ img {
     font-family: monospace;
     margin: 15px 0;
 }
+
+.detail_image {
+    max-width: 90%;
+    max-height: 80vh;
+    object-fit: contain;
+    display: block;
+    margin: 15px 0;
+}
