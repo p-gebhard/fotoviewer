@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
@@ -13,7 +14,7 @@ from fotoviewer.server.commands import detect_objects_in_image, search_similar_i
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
-images_path = "/home/user/Pictures/personal/"
+images_path = os.environ.get("FOTOVIEWER_IMAGES_PATH", "/home/user/Pictures/personal/")
 
 app = FastAPI()
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))

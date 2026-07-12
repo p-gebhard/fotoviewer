@@ -204,12 +204,14 @@ dependencies = [
 
 [package.optional-dependencies]
 test = [
+    { name = "httpx" },
     { name = "pytest" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "fastapi" },
+    { name = "httpx", marker = "extra == 'test'" },
     { name = "jinja2" },
     { name = "numpy" },
     { name = "pillow" },
