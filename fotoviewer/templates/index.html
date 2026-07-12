@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Foto Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static_content/main.css">
+    <script>
+      const socket = new WebSocket('ws://' + location.host + '/echo');
+      socket.addEventListener('message', msg => {
+        data = JSON.parse(msg.data)
+        if (data.status != "ok") {
+          log(`${data.status}: ${data.reason}`);
+        }
+        else if (data.command == "search_similar_images" || data.command == "search_images_by_text") {
+          const image_html = data.response.map(image => `<img class='simimg' src='/images/${image.file}' />`)
+          document.getElementById("similar_images").innerHTML = image_html.join("\n");
+        }
+      })
+
+      function log(text, color) {
+        document.getElementById("log").innerHTML = `<span style="color: ${color}">${text}</span><br>`;
+      }
+
+      function upload_image(event) {
+        var input = document.querySelector("input[type='file']");
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          // Use a regex to remove data url part
+          const base64String = reader.result.replace("data:", "").replace(/^.+,/, "");
+          var data = {
+            command: "search_similar_images",
+            image: base64String
+          }
+          socket.send(JSON.stringify(data));
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+
+      function search_by_text() {
+        const query = document.getElementById("text_query").value;
+        var data = {
+          command: "search_images_by_text",
+          query: query
+        }
+        socket.send(JSON.stringify(data));
+      }
+  </script>
+  </head>
+  <body>
+    <div id="container">
+      <h2>Search by Text</h2>
+      <div class="row">
+          <input type="text" id="text_query" placeholder="e.g. a dog on the beach">
+          <button onclick="search_by_text()">Search</button>
+      </div>
+      <h2>Search Similar</h2>
+      <div id="log"></div>
+      <br>
+      <div class="row">
+          <input type="file" id="file" placeholder="upload a file" name="file">
+          <button onclick="upload_image()">Submit</button>
+      </div>
+      <div id="similar_images">
+      </div>
+    </div>
+  </body>
+</html>

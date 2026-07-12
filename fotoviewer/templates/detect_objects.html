@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Foto Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static_content/main.css">
+    <script>
+      const socket = new WebSocket('ws://' + location.host + '/echo');
+      socket.addEventListener('message', msg => {
+        data = JSON.parse(msg.data)
+        if (data.status != "ok") {
+          log(`${data.status}: ${data.reason}`);
+        }
+        else if (data.command == "detect_objects_in_image") {
+          const img = document.getElementById("processed_image");
+          img.src = "data:image/jpeg;base64," + data.response.image;
+        }
+      })
+
+      function log(text, color) {
+        document.getElementById("log").innerHTML += `<span style="color: ${color}">${text}</span><br>`;
+      }
+
+      function upload_image(event) {
+        var input = document.querySelector("input[type='file']");
+        const img = document.getElementById("processed_image");
+        img.src = undefined
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          // Use a regex to remove data url part
+          const base64String = reader.result.replace("data:", "").replace(/^.+,/, "");
+          var data = {
+            command: "detect_objects_in_image",
+            image: base64String
+          }
+          socket.send(JSON.stringify(data));
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+  </script>
+  </head>
+  <body>
+    <div id="container">
+      <h2>Object Detector</h2>
+      <div id="log"></div>
+      <br>
+      <div class="row">
+          <input type="file" id="file" placeholder="upload a file" name="file">
+          <button onclick="upload_image()">Submit</button>
+      </div>
+      <div>
+          <img id="processed_image" />
+      </div>
+    </div>
+  </body>
+</html>

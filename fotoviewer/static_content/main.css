@@ -1,0 +1,19 @@
+img {
+    max-height: 100%;
+    max-width: 100%;
+    width: auto; /* These two are added only for clarity, */
+    height: auto; /* as the default is auto anyway */
+}
+
+#similar_images {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.simimg {
+    max-width: 250px;
+    max-height: 250px;
+    object-fit: contain;
+    margin: 15px;
+}
