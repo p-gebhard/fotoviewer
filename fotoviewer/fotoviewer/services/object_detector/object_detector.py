@@ -1,16 +1,22 @@
+from pathlib import Path
+
 import torch
 from PIL import Image
 import torchvision.transforms as T
 
-from fotoviewer.object_detector.visualizer import render_bboxes
-from fotoviewer.object_detector.detr_model import DETRModel
+from fotoviewer.services.object_detector.visualizer import render_bboxes
+from fotoviewer.services.object_detector.detr_model import DETRModel
+
+
+DEFAULT_CHECKPOINT_PATH = Path(__file__).resolve().parent / "detr_demo-da2a99e9.pth"
 
 
 class ObjectDetector():
 
-    def __init__(self, device) -> None:
+    def __init__(self, device, checkpoint_path: str | Path | None = None) -> None:
+        checkpoint_path = checkpoint_path or DEFAULT_CHECKPOINT_PATH
         self._model = DETRModel(num_classes=91)
-        state_dict = torch.load("fotoviewer/object_detector/detr_demo-da2a99e9.pth", map_location=device)
+        state_dict = torch.load(checkpoint_path, map_location=device)
         self._model.load_state_dict(state_dict)
         self._model.eval()
 

@@ -2,7 +2,7 @@ import pytest
 import torch
 from PIL import Image
 
-from fotoviewer.object_detector.object_detector import ObjectDetector
+from fotoviewer.services.object_detector.object_detector import ObjectDetector
 
 
 def make_detector():

@@ -16,4 +16,10 @@ img {
     max-height: 250px;
     object-fit: contain;
     margin: 15px;
+    cursor: pointer;
+}
+
+#metadata {
+    font-family: monospace;
+    margin: 15px 0;
 }

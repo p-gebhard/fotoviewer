@@ -3,8 +3,7 @@ import numpy as np
 from typing import Any, Callable
 from PIL import Image
 
-from fotoviewer.image_processor.image_processor import ImageProcessor
-from fotoviewer.image_processor.index import Index
+from fotoviewer.services.indexing.index import Index
 
 
 IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".bmp"]

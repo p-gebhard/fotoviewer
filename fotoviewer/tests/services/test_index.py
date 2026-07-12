@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from fotoviewer.image_processor.index import Index
+from fotoviewer.services.indexing.index import Index
 
 
 def unit(vec):

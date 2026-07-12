@@ -1,49 +1,52 @@
-import importlib
 import sys
-import types
+from contextlib import asynccontextmanager
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from starlette.testclient import TestClient
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from fotoviewer.core.config import Settings
+from fotoviewer.main import create_app
 
-@pytest.fixture
-def commands_module(monkeypatch):
-    """Import fotoviewer.server.commands with ObjectDetector/ImageProcessor/Index.load
-    replaced by mocks, so no real model weights, network access or index file are touched.
-    """
-    import fotoviewer.object_detector.object_detector as od_mod
-    import fotoviewer.image_processor.image_processor as ip_mod
-    import fotoviewer.image_processor.index as index_mod
 
-    monkeypatch.setattr(od_mod, "ObjectDetector", MagicMock(return_value=MagicMock()))
-    monkeypatch.setattr(ip_mod, "ImageProcessor", MagicMock(return_value=MagicMock()))
-    monkeypatch.setattr(index_mod.Index, "load", lambda self, name, filename: None)
+class FakeIndex:
+    def __init__(self, results=None):
+        self._results = results or []
+        self.calls = []
 
-    sys.modules.pop("fotoviewer.server.commands", None)
-    module = importlib.import_module("fotoviewer.server.commands")
-    yield module
-    sys.modules.pop("fotoviewer.server.commands", None)
+    def search(self, name, embedding, k):
+        self.calls.append((name, embedding, k))
+        return self._results
 
 
 @pytest.fixture
-def app_module(monkeypatch, tmp_path):
-    """Import app.py with fotoviewer.server.commands replaced by mocks and
-    images_path pointed at an empty tmp_path, so no real models, index or
-    personal photo directory are ever touched.
+def fake_services():
+    """Mocks handed to the app via the fake lifespan below; tests configure
+    their return values directly, no real models/network/personal data involved.
     """
-    fake_commands = types.ModuleType("fotoviewer.server.commands")
-    fake_commands.detect_objects_in_image = MagicMock(name="detect_objects_in_image")
-    fake_commands.search_similar_images = MagicMock(name="search_similar_images")
-    fake_commands.search_images_by_text = MagicMock(name="search_images_by_text")
-    monkeypatch.setitem(sys.modules, "fotoviewer.server.commands", fake_commands)
-    monkeypatch.setenv("FOTOVIEWER_IMAGES_PATH", str(tmp_path))
+    return {
+        "image_processor": MagicMock(),
+        "object_detector": MagicMock(),
+        "image_index": FakeIndex(),
+    }
 
-    sys.modules.pop("app", None)
-    module = importlib.import_module("app")
-    yield module, fake_commands
-    sys.modules.pop("app", None)
+
+@pytest.fixture
+def client(tmp_path, fake_services):
+    @asynccontextmanager
+    async def fake_lifespan(app):
+        app.state.image_processor = fake_services["image_processor"]
+        app.state.object_detector = fake_services["object_detector"]
+        app.state.image_index = fake_services["image_index"]
+        yield
+
+    settings = Settings(images_path=str(tmp_path))
+    app = create_app(settings=settings, lifespan=fake_lifespan)
+
+    with TestClient(app) as test_client:
+        yield test_client

@@ -3,7 +3,7 @@
   <head>
     <title>Foto Viewer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/static_content/main.css">
+    <link rel="stylesheet" href="/static/main.css">
     <script>
       const socket = new WebSocket('ws://' + location.host + '/echo');
       socket.addEventListener('message', msg => {
@@ -12,10 +12,40 @@
           log(`${data.status}: ${data.reason}`);
         }
         else if (data.command == "search_similar_images" || data.command == "search_images_by_text") {
-          const image_html = data.response.map(image => `<img class='simimg' src='/images/${image.file}' />`)
-          document.getElementById("similar_images").innerHTML = image_html.join("\n");
+          const container = document.getElementById("similar_images");
+          container.innerHTML = "";
+          data.response.forEach(image => {
+            const img = document.createElement("img");
+            img.className = "simimg";
+            img.src = "/images/" + image.file;
+            img.addEventListener("click", () => show_metadata(image.file));
+            container.appendChild(img);
+          });
         }
       })
+
+      function show_metadata(file) {
+        fetch("/api/images/metadata?path=" + encodeURIComponent(file))
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(response.status);
+            }
+            return response.json();
+          })
+          .then(data => {
+            const rows = [
+              ["Datei", data.path],
+              ["Abmessungen", `${data.width} × ${data.height}`],
+              ["Dateigröße", `${(data.file_size_bytes / 1024).toFixed(1)} KB`],
+              ["Format", data.format || "-"],
+              ["Aufnahmedatum", data.date_taken || "-"],
+              ["Kamera", [data.camera_make, data.camera_model].filter(Boolean).join(" ") || "-"],
+            ];
+            document.getElementById("metadata").innerHTML =
+              rows.map(([label, value]) => `<div><strong>${label}:</strong> ${value}</div>`).join("\n");
+          })
+          .catch(() => log("Metadaten konnten nicht geladen werden", "red"));
+      }
 
       function log(text, color) {
         document.getElementById("log").innerHTML = `<span style="color: ${color}">${text}</span><br>`;
@@ -62,6 +92,8 @@
       </div>
       <div id="similar_images">
       </div>
+      <h2>Metadata</h2>
+      <div id="metadata"></div>
     </div>
   </body>
 </html>

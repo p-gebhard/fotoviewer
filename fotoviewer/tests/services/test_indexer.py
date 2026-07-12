@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from fotoviewer.image_processor.index import Index
-from fotoviewer.image_processor.indexer import Indexer
+from fotoviewer.services.indexing.index import Index
+from fotoviewer.services.indexing.indexer import Indexer
 
 
 def make_image(path):

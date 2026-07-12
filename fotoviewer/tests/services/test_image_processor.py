@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import torch
 
-from fotoviewer.image_processor.image_processor import ImageProcessor
+from fotoviewer.services.image_processor import ImageProcessor
 
 
 class FakeOutput:
@@ -13,11 +13,11 @@ class FakeOutput:
 
 def make_processor(monkeypatch, model, processor):
     monkeypatch.setattr(
-        "fotoviewer.image_processor.image_processor.CLIPModel.from_pretrained",
+        "fotoviewer.services.image_processor.CLIPModel.from_pretrained",
         lambda name: model,
     )
     monkeypatch.setattr(
-        "fotoviewer.image_processor.image_processor.CLIPProcessor.from_pretrained",
+        "fotoviewer.services.image_processor.CLIPProcessor.from_pretrained",
         lambda name: processor,
     )
     return ImageProcessor()

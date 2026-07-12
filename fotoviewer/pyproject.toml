@@ -14,10 +14,15 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "jinja2",
+    "pydantic-settings",
 ]
 
-[project.optional-dependencies]
-test = ["pytest", "httpx"]
+[dependency-groups]
+dev = ["pytest", "httpx"]
+
+[project.scripts]
+fotoviewer-create-index = "fotoviewer.cli.create_index:main"
+fotoviewer-search = "fotoviewer.cli.search:main"
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -25,3 +30,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
