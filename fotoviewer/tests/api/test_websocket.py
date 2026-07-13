@@ -37,15 +37,14 @@ def test_websocket_dispatches_search_similar_images(client, fake_services):
 
 
 def test_websocket_dispatches_detect_objects_in_image(client, fake_services):
-    fake_services["object_detector"].detect.return_value = ([0.9], [[1, 2, 3, 4]])
+    fake_services["object_detector"].detect.return_value = [{"label": "dog", "score": 0.9, "bbox": [1, 2, 3, 4]}]
 
     with client.websocket_connect("/echo") as ws:
         ws.send_text(json.dumps({"command": "detect_objects_in_image", "image": _encoded_test_image()}))
         response = json.loads(ws.receive_text())
 
     assert response["status"] == "ok"
-    assert response["response"]["scores"] == [0.9]
-    assert response["response"]["bboxes"] == [[1, 2, 3, 4]]
+    assert response["response"]["detections"] == [{"label": "dog", "score": 0.9, "bbox": [1, 2, 3, 4]}]
 
 
 def test_websocket_rejects_unknown_command(client):

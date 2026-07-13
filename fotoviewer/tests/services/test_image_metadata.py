@@ -1,7 +1,8 @@
 import pytest
 from PIL import Image
 
-from fotoviewer.services.image_metadata import ImageNotFoundError, get_image_metadata
+from fotoviewer.services.image_files import ImageNotFoundError
+from fotoviewer.services.image_metadata import get_image_metadata
 
 
 def test_get_image_metadata_returns_dimensions_and_format(tmp_path):

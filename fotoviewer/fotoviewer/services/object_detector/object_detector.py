@@ -4,6 +4,7 @@ import torch
 from PIL import Image
 import torchvision.transforms as T
 
+from fotoviewer.services.object_detector.coco_classes import COCO_CLASSES
 from fotoviewer.services.object_detector.visualizer import render_bboxes
 from fotoviewer.services.object_detector.detr_model import DETRModel
 
@@ -44,19 +45,23 @@ class ObjectDetector():
 
         outputs = self._model(img)
 
-        probas = outputs["pred_logits"].softmax(-1)[0, :, :-1]
-        keep = probas.max(-1).values > 0.7
+        confidences, class_ids = outputs["pred_logits"].softmax(-1)[0, :, :-1].max(-1)
+        keep = confidences > 0.7
 
         bboxes_scaled = self.rescale_bboxes(outputs["pred_boxes"][0, keep], im.size)
-        return probas[keep].tolist(), bboxes_scaled.tolist()
+        return [
+            {"label": COCO_CLASSES[class_id], "score": score, "bbox": bbox}
+            for class_id, score, bbox in zip(
+                class_ids[keep].tolist(), confidences[keep].tolist(), bboxes_scaled.tolist()
+            )
+        ]
 
 
 if __name__ == "__main__":
     img_file = "/home/user/projects/fotoviewer/images/CIMG2568.JPG"
     image = Image.open(img_file)
     od = ObjectDetector("cuda")
-    scores, boxes = od.detect(image)
-    print(scores)
-    print(boxes)
-    render_bboxes(image, boxes)
+    detections = od.detect(image)
+    print(detections)
+    render_bboxes(image, detections)
     image.save(img_file.replace(".JPG", "_boxes.JPG"))

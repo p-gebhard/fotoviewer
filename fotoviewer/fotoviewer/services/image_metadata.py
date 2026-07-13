@@ -1,18 +1,12 @@
-from pathlib import Path
 from typing import Any
 
 from PIL import ExifTags, Image
 
-
-class ImageNotFoundError(Exception):
-    pass
+from fotoviewer.services.image_files import resolve_image_path
 
 
 def get_image_metadata(images_path: str, relative_path: str) -> dict[str, Any]:
-    base = Path(images_path).resolve()
-    full_path = (base / relative_path).resolve()
-    if not full_path.is_relative_to(base) or not full_path.is_file():
-        raise ImageNotFoundError(relative_path)
+    full_path = resolve_image_path(images_path, relative_path)
 
     with Image.open(full_path) as image:
         width, height = image.size

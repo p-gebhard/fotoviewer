@@ -33,14 +33,14 @@ def test_rescale_bboxes_handles_multiple_boxes():
     assert torch.allclose(result[1], torch.tensor([0.0, 0.0, 5.0, 5.0]))
 
 
-def test_detect_filters_predictions_by_confidence():
+def test_detect_filters_predictions_by_confidence_and_assigns_labels():
     detector = make_detector()
     detector._transform = lambda im: torch.zeros(3, 100, 100)
 
     logits = torch.full((1, 3, 92), -10.0)
-    logits[0, 0, 5] = 10.0
-    logits[0, 1, 5] = -10.0
-    logits[0, 2, 7] = 10.0
+    logits[0, 0, 18] = 10.0  # dog
+    logits[0, 1, 18] = -10.0  # low confidence -> filtered out
+    logits[0, 2, 1] = 10.0  # person
     pred_boxes = torch.tensor([[
         [0.5, 0.5, 0.2, 0.2],
         [0.1, 0.1, 0.1, 0.1],
@@ -48,10 +48,12 @@ def test_detect_filters_predictions_by_confidence():
     ]])
     detector._model = lambda img: {"pred_logits": logits, "pred_boxes": pred_boxes}
 
-    scores, boxes = detector.detect(Image.new("RGB", (50, 50)))
+    detections = detector.detect(Image.new("RGB", (50, 50)))
 
-    assert len(scores) == 2
-    assert len(boxes) == 2
+    assert len(detections) == 2
+    assert {d["label"] for d in detections} == {"dog", "person"}
+    assert all(isinstance(d["score"], float) and d["score"] > 0.7 for d in detections)
+    assert all(len(d["bbox"]) == 4 for d in detections)
 
 
 def test_detect_rejects_oversized_images():

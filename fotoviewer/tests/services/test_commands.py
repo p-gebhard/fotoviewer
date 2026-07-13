@@ -47,13 +47,12 @@ def test_search_images_by_text_searches_with_text_features():
     image_processor.compute_text_features.assert_called_once_with("a camel")
 
 
-def test_detect_objects_in_image_returns_encoded_jpeg_and_boxes():
+def test_detect_objects_in_image_returns_encoded_jpeg_and_detections():
     object_detector = MagicMock()
-    object_detector.detect.return_value = ([0.9], [[1, 2, 3, 4]])
+    object_detector.detect.return_value = [{"label": "dog", "score": 0.9, "bbox": [1, 2, 3, 4]}]
 
     result = commands.detect_objects_in_image(object_detector, _encoded_test_image())
 
-    assert result["scores"] == [0.9]
-    assert result["bboxes"] == [[1, 2, 3, 4]]
+    assert result["detections"] == [{"label": "dog", "score": 0.9, "bbox": [1, 2, 3, 4]}]
     decoded = base64.b64decode(result["image"])
     Image.open(BytesIO(decoded)).verify()

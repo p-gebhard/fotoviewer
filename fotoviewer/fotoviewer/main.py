@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from fotoviewer.api.routes import metadata, pages, websocket
+from fotoviewer.api.routes import detection, metadata, pages, websocket
 from fotoviewer.core.config import Settings
 from fotoviewer.services.image_processor import ImageProcessor
 from fotoviewer.services.indexing.index import Index
@@ -39,6 +39,7 @@ def create_app(settings: Settings | None = None, lifespan=lifespan) -> FastAPI:
 
     app.include_router(pages.router)
     app.include_router(metadata.router)
+    app.include_router(detection.router)
     app.include_router(websocket.router)
     return app
 

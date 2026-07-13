@@ -2,6 +2,8 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field, TypeAdapter
 
+from fotoviewer.schemas.detection import Detection
+
 
 class DetectObjectsInImageRequest(BaseModel):
     command: Literal["detect_objects_in_image"]
@@ -32,8 +34,7 @@ class SearchResult(BaseModel):
 
 class DetectObjectsResult(BaseModel):
     image: str
-    bboxes: list
-    scores: list
+    detections: list[Detection]
 
 
 class WebSocketOkResponse(BaseModel):

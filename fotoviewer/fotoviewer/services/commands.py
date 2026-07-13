@@ -11,14 +11,13 @@ from fotoviewer.services.object_detector.visualizer import render_bboxes
 
 def detect_objects_in_image(object_detector: ObjectDetector, image_b64: str) -> dict:
     image = Image.open(BytesIO(base64.b64decode(image_b64)))
-    scores, boxes = object_detector.detect(image)
-    render_bboxes(image, boxes)
+    detections = object_detector.detect(image)
+    render_bboxes(image, detections)
     buffered = BytesIO()
     image.save(buffered, format="JPEG")
     return {
         "image": base64.b64encode(buffered.getvalue()).decode("utf-8"),
-        "bboxes": boxes,
-        "scores": scores,
+        "detections": detections,
     }
 
 

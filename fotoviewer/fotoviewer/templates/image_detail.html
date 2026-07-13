@@ -4,12 +4,46 @@
     <title>Foto Viewer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/static/main.css">
+    <script>
+      function detect_objects() {
+        const path = {{ metadata.path | tojson }};
+        fetch("/api/images/detections?path=" + encodeURIComponent(path))
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(response.status);
+            }
+            return response.json();
+          })
+          .then(data => {
+            const img = document.getElementById("detail_image");
+            const overlay = document.getElementById("detection_overlay");
+            overlay.querySelectorAll(".bbox").forEach(el => el.remove());
+            data.detections.forEach(({bbox: [x1, y1, x2, y2], label, score}) => {
+              const box = document.createElement("div");
+              box.className = "bbox";
+              box.style.left = (x1 / img.naturalWidth * 100) + "%";
+              box.style.top = (y1 / img.naturalHeight * 100) + "%";
+              box.style.width = ((x2 - x1) / img.naturalWidth * 100) + "%";
+              box.style.height = ((y2 - y1) / img.naturalHeight * 100) + "%";
+              const labelEl = document.createElement("span");
+              labelEl.className = "bbox-label";
+              labelEl.textContent = `${label} (${Math.round(score * 100)}%)`;
+              box.appendChild(labelEl);
+              overlay.appendChild(box);
+            });
+          })
+          .catch(() => alert("Objekterkennung fehlgeschlagen"));
+      }
+    </script>
   </head>
   <body>
     <div id="container">
       <a href="/">&larr; Zurück</a>
       <h2>{{ metadata.path }}</h2>
-      <img class="detail_image" src="/images/{{ metadata.path }}">
+      <div id="detection_overlay">
+        <img class="detail_image" id="detail_image" src="/images/{{ metadata.path }}">
+      </div>
+      <button onclick="detect_objects()">Objekte erkennen</button>
       <div id="metadata">
         <div><strong>Abmessungen:</strong> {{ metadata.width }} × {{ metadata.height }}</div>
         <div><strong>Dateigröße:</strong> {{ (metadata.file_size_bytes / 1024) | round(1) }} KB</div>
