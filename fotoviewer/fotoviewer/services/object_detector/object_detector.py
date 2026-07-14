@@ -1,63 +1,36 @@
-from pathlib import Path
-
 import torch
-from PIL import Image
-import torchvision.transforms as T
-
-from fotoviewer.services.object_detector.coco_classes import COCO_CLASSES
-from fotoviewer.services.object_detector.visualizer import render_bboxes
-from fotoviewer.services.object_detector.detr_model import DETRModel
+from transformers import RTDetrForObjectDetection, RTDetrImageProcessor
 
 
-DEFAULT_CHECKPOINT_PATH = Path(__file__).resolve().parent / "detr_demo-da2a99e9.pth"
+class ObjectDetector:
 
-
-class ObjectDetector():
-
-    def __init__(self, device, checkpoint_path: str | Path | None = None) -> None:
-        checkpoint_path = checkpoint_path or DEFAULT_CHECKPOINT_PATH
-        self._model = DETRModel(num_classes=91)
-        state_dict = torch.load(checkpoint_path, map_location=device)
-        self._model.load_state_dict(state_dict)
+    def __init__(self, device, model_name: str = "PekingU/rtdetr_r50vd") -> None:
+        self._device = device
+        self._model = RTDetrForObjectDetection.from_pretrained(model_name).to(device)
         self._model.eval()
-
-        self._transform = T.Compose([
-            T.Resize(800),
-            T.ToTensor(),
-            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
-
-    def rescale_bboxes(self, out_bbox, size):
-        def box_cxcywh_to_xyxy(x):
-            x_c, y_c, w, h = x.unbind(1)
-            b = [(x_c - 0.5 * w), (y_c - 0.5 * h),
-                (x_c + 0.5 * w), (y_c + 0.5 * h)]
-            return torch.stack(b, dim=1)
-
-        img_w, img_h = size
-        b = box_cxcywh_to_xyxy(out_bbox)
-        b = b * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
-        return b
+        self._processor = RTDetrImageProcessor.from_pretrained(model_name)
 
     def detect(self, im):
-        img = self._transform(im).unsqueeze(0)
-        assert img.shape[-2] <= 1600 and img.shape[-1] <= 1600, "demo model only supports images up to 1600 pixels on each side"
+        inputs = self._processor(images=im, return_tensors="pt").to(self._device)
+        with torch.no_grad():
+            outputs = self._model(**inputs)
 
-        outputs = self._model(img)
+        target_sizes = torch.tensor([im.size[::-1]])
+        results = self._processor.post_process_object_detection(
+            outputs, threshold=0.7, target_sizes=target_sizes
+        )[0]
 
-        confidences, class_ids = outputs["pred_logits"].softmax(-1)[0, :, :-1].max(-1)
-        keep = confidences > 0.7
-
-        bboxes_scaled = self.rescale_bboxes(outputs["pred_boxes"][0, keep], im.size)
         return [
-            {"label": COCO_CLASSES[class_id], "score": score, "bbox": bbox}
-            for class_id, score, bbox in zip(
-                class_ids[keep].tolist(), confidences[keep].tolist(), bboxes_scaled.tolist()
-            )
+            {"label": self._model.config.id2label[label_id.item()], "score": score.item(), "bbox": box.tolist()}
+            for score, label_id, box in zip(results["scores"], results["labels"], results["boxes"])
         ]
 
 
 if __name__ == "__main__":
+    from PIL import Image
+
+    from fotoviewer.services.object_detector.visualizer import render_bboxes
+
     img_file = "/home/user/projects/fotoviewer/images/CIMG2568.JPG"
     image = Image.open(img_file)
     od = ObjectDetector("cuda")

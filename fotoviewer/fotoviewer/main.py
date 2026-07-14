@@ -20,8 +20,8 @@ async def lifespan(app: FastAPI):
     settings: Settings = app.state.settings
     device = settings.device or ("cuda" if torch.cuda.is_available() else "cpu")
 
-    app.state.image_processor = ImageProcessor(settings.clip_model_name)
-    app.state.object_detector = ObjectDetector(device)
+    app.state.image_processor = ImageProcessor(settings.embedding_model_name)
+    app.state.object_detector = ObjectDetector(device, settings.detection_model_name)
     app.state.image_index = Index()
     app.state.image_index.load("image", str(Path(settings.index_dir) / "image.npz"))
     yield

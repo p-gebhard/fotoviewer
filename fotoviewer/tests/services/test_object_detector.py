@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 import torch
 from PIL import Image
@@ -5,60 +7,55 @@ from PIL import Image
 from fotoviewer.services.object_detector.object_detector import ObjectDetector
 
 
-def make_detector():
-    # bypass __init__ so no checkpoint file / CUDA device is required
-    return ObjectDetector.__new__(ObjectDetector)
+def make_detector(monkeypatch, model, processor, device="cpu"):
+    monkeypatch.setattr(
+        "fotoviewer.services.object_detector.object_detector.RTDetrForObjectDetection.from_pretrained",
+        lambda name: model,
+    )
+    monkeypatch.setattr(
+        "fotoviewer.services.object_detector.object_detector.RTDetrImageProcessor.from_pretrained",
+        lambda name: processor,
+    )
+    return ObjectDetector(device)
 
 
-def test_rescale_bboxes_converts_center_format_to_pixel_corners():
-    detector = make_detector()
-    out_bbox = torch.tensor([[0.5, 0.5, 0.2, 0.4]])
+def test_detect_returns_labeled_detections(monkeypatch):
+    model = MagicMock()
+    model.to.return_value = model
+    model.config.id2label = {17: "cat", 18: "dog"}
 
-    result = detector.rescale_bboxes(out_bbox, (100, 200))
+    processor_output = MagicMock()
+    processor_output.to.return_value = {"pixel_values": torch.zeros(1, 3, 640, 640)}
+    processor = MagicMock(return_value=processor_output)
+    processor.post_process_object_detection.return_value = [
+        {
+            "scores": torch.tensor([0.94]),
+            "labels": torch.tensor([18]),
+            "boxes": torch.tensor([[1.0, 2.0, 3.0, 4.0]]),
+        }
+    ]
 
-    assert torch.allclose(result, torch.tensor([[40.0, 60.0, 60.0, 140.0]]))
-
-
-def test_rescale_bboxes_handles_multiple_boxes():
-    detector = make_detector()
-    out_bbox = torch.tensor([
-        [0.5, 0.5, 1.0, 1.0],
-        [0.25, 0.25, 0.5, 0.5],
-    ])
-
-    result = detector.rescale_bboxes(out_bbox, (10, 10))
-
-    assert result.shape == (2, 4)
-    assert torch.allclose(result[0], torch.tensor([0.0, 0.0, 10.0, 10.0]))
-    assert torch.allclose(result[1], torch.tensor([0.0, 0.0, 5.0, 5.0]))
-
-
-def test_detect_filters_predictions_by_confidence_and_assigns_labels():
-    detector = make_detector()
-    detector._transform = lambda im: torch.zeros(3, 100, 100)
-
-    logits = torch.full((1, 3, 92), -10.0)
-    logits[0, 0, 18] = 10.0  # dog
-    logits[0, 1, 18] = -10.0  # low confidence -> filtered out
-    logits[0, 2, 1] = 10.0  # person
-    pred_boxes = torch.tensor([[
-        [0.5, 0.5, 0.2, 0.2],
-        [0.1, 0.1, 0.1, 0.1],
-        [0.5, 0.5, 0.4, 0.4],
-    ]])
-    detector._model = lambda img: {"pred_logits": logits, "pred_boxes": pred_boxes}
-
+    detector = make_detector(monkeypatch, model, processor)
     detections = detector.detect(Image.new("RGB", (50, 50)))
 
-    assert len(detections) == 2
-    assert {d["label"] for d in detections} == {"dog", "person"}
-    assert all(isinstance(d["score"], float) and d["score"] > 0.7 for d in detections)
-    assert all(len(d["bbox"]) == 4 for d in detections)
+    assert len(detections) == 1
+    assert detections[0]["label"] == "dog"
+    assert detections[0]["score"] == pytest.approx(0.94)
+    assert detections[0]["bbox"] == [1.0, 2.0, 3.0, 4.0]
 
 
-def test_detect_rejects_oversized_images():
-    detector = make_detector()
-    detector._transform = lambda im: torch.zeros(3, 1601, 800)
+def test_model_and_inputs_are_moved_to_the_requested_device(monkeypatch):
+    model = MagicMock()
+    model.to.return_value = model
+    processor_output = MagicMock()
+    processor_output.to.return_value = {"pixel_values": torch.zeros(1, 3, 640, 640)}
+    processor = MagicMock(return_value=processor_output)
+    processor.post_process_object_detection.return_value = [
+        {"scores": torch.tensor([]), "labels": torch.tensor([], dtype=torch.long), "boxes": torch.zeros(0, 4)}
+    ]
 
-    with pytest.raises(AssertionError):
-        detector.detect(Image.new("RGB", (10, 10)))
+    detector = make_detector(monkeypatch, model, processor, device="cuda")
+    detector.detect(Image.new("RGB", (10, 10)))
+
+    model.to.assert_called_once_with("cuda")
+    processor_output.to.assert_called_once_with("cuda")

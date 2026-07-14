@@ -13,11 +13,11 @@ class FakeOutput:
 
 def make_processor(monkeypatch, model, processor):
     monkeypatch.setattr(
-        "fotoviewer.services.image_processor.CLIPModel.from_pretrained",
+        "fotoviewer.services.image_processor.SiglipModel.from_pretrained",
         lambda name: model,
     )
     monkeypatch.setattr(
-        "fotoviewer.services.image_processor.CLIPProcessor.from_pretrained",
+        "fotoviewer.services.image_processor.SiglipProcessor.from_pretrained",
         lambda name: processor,
     )
     return ImageProcessor()
@@ -47,5 +47,5 @@ def test_compute_text_features_returns_normalized_numpy_array(monkeypatch):
 
     assert isinstance(result, np.ndarray)
     assert np.allclose(result, [[1.0, 0.0, 0.0]])
-    processor.assert_called_once_with(text="a camel", return_tensors="pt", padding=True)
+    processor.assert_called_once_with(text="a camel", return_tensors="pt", padding="max_length")
     model.get_text_features.assert_called_once()

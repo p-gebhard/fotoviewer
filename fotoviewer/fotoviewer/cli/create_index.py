@@ -5,7 +5,7 @@ from fotoviewer.services.indexing.indexer import Indexer
 
 def main() -> None:
     settings = Settings()
-    ip = ImageProcessor(settings.clip_model_name)
+    ip = ImageProcessor(settings.embedding_model_name)
     indexer = Indexer(ip.compute_image_features)
     indexer.index_folder(settings.images_path, settings.index_dir)
 

@@ -6,5 +6,6 @@ class Settings(BaseSettings):
 
     images_path: str = "/home/user/Pictures/personal/"
     index_dir: str = "../indices"
-    clip_model_name: str = "openai/clip-vit-base-patch32"
+    embedding_model_name: str = "google/siglip2-base-patch16-224"
+    detection_model_name: str = "PekingU/rtdetr_r50vd"
     device: str | None = None

@@ -14,7 +14,7 @@ def main() -> None:
         raise SystemExit(1)
 
     settings = Settings()
-    ip = ImageProcessor(settings.clip_model_name)
+    ip = ImageProcessor(settings.embedding_model_name)
     index = Index()
     index.load("image", str(Path(settings.index_dir) / "image.npz"))
 
