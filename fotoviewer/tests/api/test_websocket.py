@@ -44,7 +44,9 @@ def test_websocket_dispatches_detect_objects_in_image(client, fake_services):
         response = json.loads(ws.receive_text())
 
     assert response["status"] == "ok"
-    assert response["response"]["detections"] == [{"label": "dog", "score": 0.9, "bbox": [1, 2, 3, 4]}]
+    assert response["response"]["detections"] == [
+        {"label": "dog", "score": 0.9, "bbox": [1, 2, 3, 4], "identity": None, "identity_score": None}
+    ]
 
 
 def test_websocket_rejects_unknown_command(client):

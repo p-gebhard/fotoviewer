@@ -8,4 +8,5 @@ class Settings(BaseSettings):
     index_dir: str = "../indices"
     embedding_model_name: str = "google/siglip2-base-patch16-224"
     detection_model_name: str = "PekingU/rtdetr_r50vd"
+    identity_match_threshold: float = 0.75
     device: str | None = None

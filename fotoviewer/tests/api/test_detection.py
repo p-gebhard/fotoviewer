@@ -8,7 +8,11 @@ def test_detections_endpoint_returns_labeled_detections(client, fake_services, t
     response = client.get("/api/images/detections", params={"path": "photo.jpg"})
 
     assert response.status_code == 200
-    assert response.json() == {"detections": [{"label": "dog", "score": 0.9, "bbox": [1, 2, 3, 4]}]}
+    assert response.json() == {
+        "detections": [
+            {"label": "dog", "score": 0.9, "bbox": [1, 2, 3, 4], "identity": None, "identity_score": None}
+        ]
+    }
 
 
 def test_detections_endpoint_404_for_missing_file(client):

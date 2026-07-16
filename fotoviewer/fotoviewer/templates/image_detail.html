@@ -18,7 +18,8 @@
             const img = document.getElementById("detail_image");
             const overlay = document.getElementById("detection_overlay");
             overlay.querySelectorAll(".bbox").forEach(el => el.remove());
-            data.detections.forEach(({bbox: [x1, y1, x2, y2], label, score}) => {
+            data.detections.forEach(detection => {
+              const [x1, y1, x2, y2] = detection.bbox;
               const box = document.createElement("div");
               box.className = "bbox";
               box.style.left = (x1 / img.naturalWidth * 100) + "%";
@@ -27,12 +28,34 @@
               box.style.height = ((y2 - y1) / img.naturalHeight * 100) + "%";
               const labelEl = document.createElement("span");
               labelEl.className = "bbox-label";
-              labelEl.textContent = `${label} (${Math.round(score * 100)}%)`;
+              labelEl.textContent = detection.identity
+                ? `${detection.identity} (${Math.round(detection.identity_score * 100)}%)`
+                : `${detection.label} (${Math.round(detection.score * 100)}%)`;
               box.appendChild(labelEl);
+              box.addEventListener("click", () => tag_individual(detection.bbox));
               overlay.appendChild(box);
             });
           })
           .catch(() => alert("Objekterkennung fehlgeschlagen"));
+      }
+
+      function tag_individual(bbox) {
+        const name = window.prompt("Name für dieses Objekt?");
+        if (!name) {
+          return;
+        }
+        fetch("/api/individuals", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({path: {{ metadata.path | tojson }}, bbox: bbox, name: name}),
+        })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(response.status);
+            }
+            detect_objects();
+          })
+          .catch(() => alert("Benennen fehlgeschlagen"));
       }
     </script>
   </head>

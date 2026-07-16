@@ -20,8 +20,20 @@ def get_image_index(websocket: WebSocket) -> Index:
     return websocket.app.state.image_index
 
 
+def get_individuals_index(websocket: WebSocket) -> Index:
+    return websocket.app.state.individuals_index
+
+
 def get_object_detector_from_request(request: Request) -> ObjectDetector:
     return request.app.state.object_detector
+
+
+def get_image_processor_from_request(request: Request) -> ImageProcessor:
+    return request.app.state.image_processor
+
+
+def get_individuals_index_from_request(request: Request) -> Index:
+    return request.app.state.individuals_index
 
 
 def get_image_metadata_or_404(path: str, request: Request) -> dict:
@@ -36,9 +48,18 @@ def get_image_detections_or_404(
     path: str,
     request: Request,
     object_detector: ObjectDetector = Depends(get_object_detector_from_request),
+    image_processor: ImageProcessor = Depends(get_image_processor_from_request),
+    individuals_index: Index = Depends(get_individuals_index_from_request),
 ) -> dict:
     settings = request.app.state.settings
     try:
-        return detect_objects_in_file(object_detector, settings.images_path, path)
+        return detect_objects_in_file(
+            object_detector,
+            image_processor,
+            individuals_index,
+            settings.images_path,
+            path,
+            settings.identity_match_threshold,
+        )
     except ImageNotFoundError:
         raise HTTPException(status_code=404, detail="Image not found")

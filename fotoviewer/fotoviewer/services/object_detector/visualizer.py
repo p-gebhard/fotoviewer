@@ -5,4 +5,5 @@ def render_bboxes(image: Image, detections):
     draw = ImageDraw.Draw(image)
     for detection in detections:
         draw.rectangle(detection["bbox"])
-        draw.text((detection["bbox"][0], detection["bbox"][1]), detection["label"])
+        label = detection.get("identity") or detection["label"]
+        draw.text((detection["bbox"][0], detection["bbox"][1]), label)

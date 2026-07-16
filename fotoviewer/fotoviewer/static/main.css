@@ -41,7 +41,7 @@ img {
     position: absolute;
     border: 2px solid #ff3b30;
     box-sizing: border-box;
-    pointer-events: none;
+    cursor: pointer;
 }
 
 .bbox-label {
