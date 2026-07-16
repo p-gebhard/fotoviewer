@@ -198,6 +198,7 @@ dependencies = [
     { name = "pillow" },
     { name = "pydantic-settings" },
     { name = "torch" },
+    { name = "tqdm" },
     { name = "transformers" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -216,6 +217,7 @@ requires-dist = [
     { name = "pillow" },
     { name = "pydantic-settings" },
     { name = "torch" },
+    { name = "tqdm" },
     { name = "transformers" },
     { name = "uvicorn", extras = ["standard"] },
 ]
