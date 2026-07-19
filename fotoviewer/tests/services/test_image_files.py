@@ -1,0 +1,49 @@
+import pytest
+from PIL import Image
+
+from fotoviewer.services.image_files import ImageNotFoundError, find_image_paths, resolve_directory_path
+
+
+def make_image(path):
+    Image.new("RGB", (4, 4), color="red").save(path)
+
+
+def test_find_image_paths_finds_images_recursively_and_skips_hidden(tmp_path):
+    sub_dir = tmp_path / "sub"
+    hidden_dir = tmp_path / ".hidden"
+    sub_dir.mkdir()
+    hidden_dir.mkdir()
+    make_image(tmp_path / "a.jpg")
+    make_image(sub_dir / "b.png")
+    make_image(hidden_dir / "c.jpg")
+    make_image(tmp_path / ".d.jpg")
+    (tmp_path / "notes.txt").write_text("not an image")
+
+    paths = find_image_paths(str(tmp_path))
+
+    names = sorted(p.split("/")[-1] for p in paths)
+    assert names == ["a.jpg", "b.png"]
+
+
+def test_resolve_directory_path_returns_existing_directory(tmp_path):
+    sub_dir = tmp_path / "sub"
+    sub_dir.mkdir()
+
+    resolved = resolve_directory_path(str(tmp_path), "sub")
+
+    assert resolved == sub_dir.resolve()
+
+
+def test_resolve_directory_path_raises_for_file(tmp_path):
+    make_image(tmp_path / "a.jpg")
+
+    with pytest.raises(ImageNotFoundError):
+        resolve_directory_path(str(tmp_path), "a.jpg")
+
+
+def test_resolve_directory_path_blocks_path_traversal(tmp_path):
+    outside_dir = tmp_path.parent / "outside_secret_dir"
+    outside_dir.mkdir(exist_ok=True)
+
+    with pytest.raises(ImageNotFoundError):
+        resolve_directory_path(str(tmp_path), "../outside_secret_dir")

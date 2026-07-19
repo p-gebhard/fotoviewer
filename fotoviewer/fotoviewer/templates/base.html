@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{% block title %}Foto Viewer{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <link rel="stylesheet" href="/static/main.css">
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="page">
+      <header class="app-header">
+        <a href="/" class="brand">📷 Foto Viewer</a>
+        <nav class="main-nav">
+          <a href="/" class="{{ 'active' if active_page == 'search' }}">Suche</a>
+          <a href="/folders" class="{{ 'active' if active_page == 'folders' }}">Ordner</a>
+          <a href="/sources" class="{{ 'active' if active_page == 'sources' }}">Indizes</a>
+          <span class="nav-disabled" title="Bald verfügbar">Duplikate</span>
+          <span class="nav-disabled" title="Bald verfügbar">Import</span>
+        </nav>
+      </header>
+      <main>
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

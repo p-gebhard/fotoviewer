@@ -4,10 +4,9 @@ from typing import Any, Callable
 from PIL import Image
 from tqdm import tqdm
 
+from fotoviewer.services.image_files import find_image_paths
 from fotoviewer.services.indexing.index import Index
 
-
-IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".bmp"]
 
 class Indexer:
 
@@ -19,7 +18,7 @@ class Indexer:
         if not os.path.exists(images_path):
             raise ValueError(f"Folder {images_path} does not exist")
 
-        image_paths = self._find_image_paths(images_path)
+        image_paths = find_image_paths(images_path)
 
         indexed_images = 0
         self._index.create("image")
@@ -35,15 +34,3 @@ class Indexer:
 
         self._index.save("image", os.path.join(output_path, "image.npz"))
         print(f"Successfully created index with {indexed_images} images")
-
-    def _find_image_paths(self, images_path: str) -> list[str]:
-        image_paths = []
-        for dirpath, dirnames, filenames in os.walk(images_path):
-            dirnames[:] = [d for d in dirnames if not d.startswith(".")]
-            for filename in filenames:
-                if filename.startswith("."):
-                    continue
-                if os.path.splitext(filename.lower())[-1] not in IMAGE_EXTENSIONS:
-                    continue
-                image_paths.append(os.path.join(dirpath, filename))
-        return image_paths

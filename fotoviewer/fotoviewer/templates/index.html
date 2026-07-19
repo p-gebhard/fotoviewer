@@ -1,11 +1,23 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Foto Viewer</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="light dark">
-    <link rel="stylesheet" href="/static/main.css">
+{% extends "base.html" %}
+
+{% block content %}
+    <section class="card">
+      <h2>Suche</h2>
+      <div class="search-row">
+        <input type="text" id="text_query" placeholder="z. B. ein Hund am Strand">
+        <button onclick="search_by_text()">Suchen</button>
+      </div>
+      <div class="search-row">
+        <input type="file" id="file" accept="image/*">
+        <button onclick="upload_image()">Ähnliche Bilder finden</button>
+      </div>
+      <div id="log" class="log"></div>
+    </section>
+
+    <div id="similar_images" class="results-grid"></div>
+{% endblock %}
+
+{% block scripts %}
     <script>
       const socket = new WebSocket('ws://' + location.host + '/echo');
       socket.addEventListener('message', msg => {
@@ -55,30 +67,5 @@
         }
         socket.send(JSON.stringify(data));
       }
-  </script>
-  </head>
-  <body>
-    <div class="page">
-      <header class="app-header">
-        <a href="/" class="brand">📷 Foto Viewer</a>
-      </header>
-
-      <main>
-        <section class="card">
-          <h2>Suche</h2>
-          <div class="search-row">
-            <input type="text" id="text_query" placeholder="z. B. ein Hund am Strand">
-            <button onclick="search_by_text()">Suchen</button>
-          </div>
-          <div class="search-row">
-            <input type="file" id="file" accept="image/*">
-            <button onclick="upload_image()">Ähnliche Bilder finden</button>
-          </div>
-          <div id="log" class="log"></div>
-        </section>
-
-        <div id="similar_images" class="results-grid"></div>
-      </main>
-    </div>
-  </body>
-</html>
+    </script>
+{% endblock %}

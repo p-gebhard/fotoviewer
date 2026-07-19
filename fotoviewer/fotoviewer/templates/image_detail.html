@@ -1,11 +1,36 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Foto Viewer</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="light dark">
-    <link rel="stylesheet" href="/static/main.css">
+{% extends "base.html" %}
+
+{% block content %}
+    <a href="/" class="back-link">← Zurück</a>
+    <h2 class="filename">{{ metadata.path }}</h2>
+
+    <div class="detail-layout">
+      <div class="detail-image-wrap">
+        <div id="detection_overlay">
+          <img class="detail_image" id="detail_image" src="/images/{{ metadata.path }}">
+        </div>
+        <button onclick="detect_objects()">Objekte erkennen</button>
+      </div>
+
+      <aside class="metadata-card card">
+        <dl>
+          <dt>Abmessungen</dt>
+          <dd>{{ metadata.width }} × {{ metadata.height }}</dd>
+          <dt>Dateigröße</dt>
+          <dd>{{ (metadata.file_size_bytes / 1024) | round(1) }} KB</dd>
+          <dt>Format</dt>
+          <dd>{{ metadata.format or "-" }}</dd>
+          <dt>Aufnahmedatum</dt>
+          <dd>{{ metadata.date_taken or "-" }}</dd>
+          {% set camera = [metadata.camera_make, metadata.camera_model] | select | join(" ") %}
+          <dt>Kamera</dt>
+          <dd>{{ camera if camera else "-" }}</dd>
+        </dl>
+      </aside>
+    </div>
+{% endblock %}
+
+{% block scripts %}
     <script>
       function detect_objects() {
         const path = {{ metadata.path | tojson }};
@@ -60,42 +85,4 @@
           .catch(() => alert("Benennen fehlgeschlagen"));
       }
     </script>
-  </head>
-  <body>
-    <div class="page">
-      <header class="app-header">
-        <a href="/" class="brand">📷 Foto Viewer</a>
-        <a href="/" class="back-link">← Zurück</a>
-      </header>
-
-      <main>
-        <h2 class="filename">{{ metadata.path }}</h2>
-
-        <div class="detail-layout">
-          <div class="detail-image-wrap">
-            <div id="detection_overlay">
-              <img class="detail_image" id="detail_image" src="/images/{{ metadata.path }}">
-            </div>
-            <button onclick="detect_objects()">Objekte erkennen</button>
-          </div>
-
-          <aside class="metadata-card card">
-            <dl>
-              <dt>Abmessungen</dt>
-              <dd>{{ metadata.width }} × {{ metadata.height }}</dd>
-              <dt>Dateigröße</dt>
-              <dd>{{ (metadata.file_size_bytes / 1024) | round(1) }} KB</dd>
-              <dt>Format</dt>
-              <dd>{{ metadata.format or "-" }}</dd>
-              <dt>Aufnahmedatum</dt>
-              <dd>{{ metadata.date_taken or "-" }}</dd>
-              {% set camera = [metadata.camera_make, metadata.camera_model] | select | join(" ") %}
-              <dt>Kamera</dt>
-              <dd>{{ camera if camera else "-" }}</dd>
-            </dl>
-          </aside>
-        </div>
-      </main>
-    </div>
-  </body>
-</html>
+{% endblock %}

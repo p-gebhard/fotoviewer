@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Ordner</h2>
+
+    <nav class="breadcrumbs">
+      <a href="/folders">Start</a>
+      {% for crumb in listing.breadcrumbs %}
+        <span class="breadcrumb-sep">/</span>
+        <a href="/folders?path={{ crumb.path | urlencode }}">{{ crumb.name }}</a>
+      {% endfor %}
+    </nav>
+
+    {% if listing.folders %}
+      <ul class="folder-list">
+        {% for folder in listing.folders %}
+          <li>
+            <a href="/folders?path={{ folder.path | urlencode }}" class="folder-item">
+              <span class="folder-icon">📁</span>
+              <span class="folder-name">{{ folder.name }}</span>
+              <span class="folder-count">{{ folder.image_count }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if listing.images %}
+      <div class="results-grid">
+        {% for image in listing.images %}
+          {% set image_path = (listing.path + "/" + image) if listing.path else image %}
+          <a href="/image?path={{ image_path | urlencode }}">
+            <img class="simimg" src="/images/{{ image_path }}">
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if not listing.folders and not listing.images %}
+      <p class="empty-state">Dieser Ordner ist leer.</p>
+    {% endif %}
+{% endblock %}

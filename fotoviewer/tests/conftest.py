@@ -17,13 +17,20 @@ from fotoviewer.services.indexing.index import Index
 
 
 class FakeIndex:
-    def __init__(self, results=None):
+    def __init__(self, results=None, num_features=0):
         self._results = results or []
         self.calls = []
+        self._num_features = num_features
 
     def search(self, name, embedding, k):
         self.calls.append((name, embedding, k))
         return self._results
+
+    def exists(self, name):
+        return True
+
+    def num_features(self, name):
+        return self._num_features
 
 
 @pytest.fixture

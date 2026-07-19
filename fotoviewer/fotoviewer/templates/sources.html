@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Indizes &amp; Datenquellen</h2>
+
+    <div class="stat-grid">
+      <div class="stat-card card">
+        <h3>Fotobibliothek</h3>
+        <dl>
+          <dt>Pfad</dt>
+          <dd>{{ overview.images_path }}</dd>
+          <dt>Dateien auf der Platte</dt>
+          <dd>{{ overview.total_files_on_disk }}</dd>
+        </dl>
+      </div>
+
+      <div class="stat-card card">
+        <h3>Such-Index</h3>
+        <dl>
+          <dt>Datei</dt>
+          <dd>{{ overview.image_index.path }}</dd>
+          <dt>Einträge</dt>
+          <dd>{{ overview.image_index.num_entries }}</dd>
+          <dt>Größe</dt>
+          <dd>{{ (overview.image_index.size_bytes / 1024 / 1024) | round(1) if overview.image_index.size_bytes else "-" }} MB</dd>
+          <dt>Zuletzt geändert</dt>
+          <dd>{{ overview.image_index.last_modified or "-" }}</dd>
+        </dl>
+      </div>
+
+      <div class="stat-card card">
+        <h3>Individuen-Galerie</h3>
+        <dl>
+          <dt>Datei</dt>
+          <dd>{{ overview.individuals_index.path }}</dd>
+          <dt>Referenz-Embeddings</dt>
+          <dd>{{ overview.individuals_index.num_entries }}</dd>
+          <dt>Eindeutige Namen</dt>
+          <dd>{{ overview.individuals_index.num_unique_names }}</dd>
+          <dt>Zuletzt geändert</dt>
+          <dd>{{ overview.individuals_index.last_modified or "-" }}</dd>
+        </dl>
+      </div>
+
+      <div class="stat-card card">
+        <h3>Modelle</h3>
+        <dl>
+          <dt>Text-/Bildsuche</dt>
+          <dd>{{ overview.embedding_model_name }}</dd>
+          <dt>Objekterkennung</dt>
+          <dd>{{ overview.detection_model_name }}</dd>
+          <dt>Wiedererkennungs-Schwellwert</dt>
+          <dd>{{ overview.identity_match_threshold }}</dd>
+        </dl>
+      </div>
+    </div>
+{% endblock %}

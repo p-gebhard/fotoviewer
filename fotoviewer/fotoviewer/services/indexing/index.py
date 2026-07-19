@@ -35,6 +35,9 @@ class Index:
     def num_features(self, name: str) -> int:
         return len(self._loaded_indices[name]["features"])
 
+    def files(self, name: str) -> np.ndarray:
+        return self._loaded_indices[name]["files"]
+
     def add(self, name: str, file: str, features: np.ndarray) -> None:
         index = self._loaded_indices[name]
         index["files"] = np.hstack([index["files"], file])
