@@ -51,6 +51,23 @@ def test_index_folder_skips_hidden_files(tmp_path):
     assert list(loaded._loaded_indices["image"]["files"]) == ["visible.jpg"]
 
 
+def test_index_folder_skips_hidden_folders(tmp_path):
+    images_dir = tmp_path / "images"
+    hidden_dir = images_dir / ".hidden"
+    hidden_dir.mkdir(parents=True)
+    make_image(images_dir / "visible.jpg")
+    make_image(hidden_dir / "inside_hidden.jpg")
+
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+
+    Indexer(fake_feature_extractor).index_folder(str(images_dir), str(output_dir))
+
+    loaded = Index()
+    loaded.load("image", str(output_dir / "image.npz"))
+    assert list(loaded._loaded_indices["image"]["files"]) == ["visible.jpg"]
+
+
 def test_index_folder_skips_unreadable_images_without_failing(tmp_path):
     images_dir = tmp_path / "images"
     images_dir.mkdir()

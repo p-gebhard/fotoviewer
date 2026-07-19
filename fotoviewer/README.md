@@ -6,7 +6,10 @@ Lokale semantische Fotosuche mit Objekterkennung. Alle Modelle (SigLIP2 für Tex
 
 ```
 uv sync
+cp .env.example .env   # und bei Bedarf anpassen
 ```
+
+`.env` wird automatisch beim Start geladen (siehe [fotoviewer/core/config.py](fotoviewer/core/config.py)) und ist gitignored — `.env.example` dient als Vorlage mit allen verfügbaren Werten.
 
 ## Starten
 

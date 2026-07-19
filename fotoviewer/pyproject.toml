@@ -16,6 +16,7 @@ dependencies = [
     "pydantic-settings",
     "tqdm",
     "torchvision>=0.28.0",
+    "python-dotenv",
 ]
 
 [dependency-groups]
