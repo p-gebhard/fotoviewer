@@ -1,8 +1,10 @@
 <!doctype html>
 <html>
   <head>
+    <meta charset="utf-8">
     <title>Foto Viewer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
     <link rel="stylesheet" href="/static/main.css">
     <script>
       const socket = new WebSocket('ws://' + location.host + '/echo');
@@ -56,21 +58,27 @@
   </script>
   </head>
   <body>
-    <div id="container">
-      <h2>Search by Text</h2>
-      <div class="row">
-          <input type="text" id="text_query" placeholder="e.g. a dog on the beach">
-          <button onclick="search_by_text()">Search</button>
-      </div>
-      <h2>Search Similar</h2>
-      <div id="log"></div>
-      <br>
-      <div class="row">
-          <input type="file" id="file" placeholder="upload a file" name="file">
-          <button onclick="upload_image()">Submit</button>
-      </div>
-      <div id="similar_images">
-      </div>
+    <div class="page">
+      <header class="app-header">
+        <a href="/" class="brand">📷 Foto Viewer</a>
+      </header>
+
+      <main>
+        <section class="card">
+          <h2>Suche</h2>
+          <div class="search-row">
+            <input type="text" id="text_query" placeholder="z. B. ein Hund am Strand">
+            <button onclick="search_by_text()">Suchen</button>
+          </div>
+          <div class="search-row">
+            <input type="file" id="file" accept="image/*">
+            <button onclick="upload_image()">Ähnliche Bilder finden</button>
+          </div>
+          <div id="log" class="log"></div>
+        </section>
+
+        <div id="similar_images" class="results-grid"></div>
+      </main>
     </div>
   </body>
 </html>

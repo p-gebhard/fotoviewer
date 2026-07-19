@@ -2,7 +2,7 @@ def test_index_route_renders_template(client):
     response = client.get("/")
 
     assert response.status_code == 200
-    assert "Search by Text" in response.text
+    assert "id=\"text_query\"" in response.text
 
 
 def test_static_files_are_served(client):
