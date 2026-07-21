@@ -346,6 +346,16 @@ img {
     color: var(--color-text-muted);
 }
 
+.duplicate-group h3 {
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.duplicate-group .results-grid {
+    margin-top: 0.5rem;
+}
+
 .stat-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

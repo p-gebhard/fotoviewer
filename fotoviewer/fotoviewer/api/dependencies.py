@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException, Request, WebSocket
 
 from fotoviewer.services.data_sources import get_data_overview
+from fotoviewer.services.duplicates import find_duplicate_groups
 from fotoviewer.services.folder_browser import list_folder
 from fotoviewer.services.image_detection import detect_objects_in_file
 from fotoviewer.services.image_files import ImageNotFoundError
@@ -85,3 +86,10 @@ def get_data_overview_dependency(
     individuals_index: Index = Depends(get_individuals_index_from_request),
 ) -> dict:
     return get_data_overview(request.app.state.settings, image_index, individuals_index)
+
+
+def get_duplicate_groups_dependency(
+    request: Request,
+    image_index: Index = Depends(get_image_index_from_request),
+) -> list:
+    return find_duplicate_groups(image_index, request.app.state.settings.duplicate_match_threshold)

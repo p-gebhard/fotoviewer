@@ -15,4 +15,5 @@ class Settings(BaseSettings):
     embedding_model_name: str = "google/siglip2-base-patch16-224"
     detection_model_name: str = "PekingU/rtdetr_r50vd"
     identity_match_threshold: float = 0.75
+    duplicate_match_threshold: float = 0.95
     device: str | None = None

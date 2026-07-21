@@ -30,6 +30,16 @@ def test_add_and_num_features():
     assert index.num_features("image") == 2
 
 
+def test_files_and_features_expose_stored_entries():
+    index = Index()
+    index.create("image")
+    index.add("image", "a.jpg", np.array([[1.0, 0.0]]))
+    index.add("image", "b.jpg", np.array([[0.0, 1.0]]))
+
+    assert list(index.files("image")) == ["a.jpg", "b.jpg"]
+    assert index.features("image").tolist() == [[1.0, 0.0], [0.0, 1.0]]
+
+
 def test_search_ranks_by_cosine_similarity():
     index = Index()
     index.create("image")

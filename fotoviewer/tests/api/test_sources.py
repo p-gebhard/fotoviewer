@@ -1,5 +1,9 @@
+import numpy as np
+
+
 def test_sources_page_renders_overview(client, fake_services):
-    fake_services["image_index"]._num_features = 5
+    for i in range(5):
+        fake_services["image_index"].add("image", f"{i}.jpg", np.array([[1.0, 0.0]]))
 
     response = client.get("/sources")
 

@@ -2,6 +2,7 @@ import base64
 import json
 from io import BytesIO
 
+import numpy as np
 from PIL import Image
 
 
@@ -11,8 +12,13 @@ def _encoded_test_image():
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
+def _unit(vec):
+    return vec / np.linalg.norm(vec)
+
+
 def test_websocket_dispatches_search_images_by_text(client, fake_services):
-    fake_services["image_index"]._results = [{"file": "a.jpg", "score": 0.5}]
+    fake_services["image_index"].add("image", "a.jpg", _unit(np.array([[1.0, 0.0]])))
+    fake_services["image_processor"].compute_text_features.return_value = _unit(np.array([[1.0, 0.0]]))
 
     with client.websocket_connect("/echo") as ws:
         ws.send_text(json.dumps({"command": "search_images_by_text", "query": "dog"}))
@@ -20,19 +26,20 @@ def test_websocket_dispatches_search_images_by_text(client, fake_services):
 
     assert response["status"] == "ok"
     assert response["command"] == "search_images_by_text"
-    assert response["response"] == [{"file": "a.jpg", "score": 0.5}]
+    assert response["response"] == [{"file": "a.jpg", "score": 1.0}]
     fake_services["image_processor"].compute_text_features.assert_called_once_with("dog")
 
 
 def test_websocket_dispatches_search_similar_images(client, fake_services):
-    fake_services["image_index"]._results = [{"file": "b.jpg", "score": 0.4}]
+    fake_services["image_index"].add("image", "b.jpg", _unit(np.array([[1.0, 0.0]])))
+    fake_services["image_processor"].compute_image_features.return_value = _unit(np.array([[1.0, 0.0]]))
 
     with client.websocket_connect("/echo") as ws:
         ws.send_text(json.dumps({"command": "search_similar_images", "image": _encoded_test_image()}))
         response = json.loads(ws.receive_text())
 
     assert response["status"] == "ok"
-    assert response["response"] == [{"file": "b.jpg", "score": 0.4}]
+    assert response["response"] == [{"file": "b.jpg", "score": 1.0}]
     fake_services["image_processor"].compute_image_features.assert_called_once()
 
 

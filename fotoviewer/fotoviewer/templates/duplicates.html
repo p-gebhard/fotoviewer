@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Duplikate</h2>
+
+    {% if groups %}
+      <p class="empty-state">{{ groups | length }} mögliche Duplikat-Gruppe(n) gefunden.</p>
+      {% for group in groups %}
+        <div class="card duplicate-group">
+          <h3>Gruppe {{ loop.index }} · {{ (group[0].score * 100) | round(1) }}% ähnlich</h3>
+          <div class="results-grid">
+            {% for entry in group %}
+              <a href="/image?path={{ entry.file | urlencode }}">
+                <img class="simimg" src="/images/{{ entry.file }}">
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="empty-state">Keine Duplikate gefunden.</p>
+    {% endif %}
+{% endblock %}

@@ -16,34 +16,23 @@ from fotoviewer.services.identity import INDIVIDUALS_COLLECTION
 from fotoviewer.services.indexing.index import Index
 
 
-class FakeIndex:
-    def __init__(self, results=None, num_features=0):
-        self._results = results or []
-        self.calls = []
-        self._num_features = num_features
-
-    def search(self, name, embedding, k):
-        self.calls.append((name, embedding, k))
-        return self._results
-
-    def exists(self, name):
-        return True
-
-    def num_features(self, name):
-        return self._num_features
-
-
 @pytest.fixture
 def fake_services():
     """Mocks handed to the app via the fake lifespan below; tests configure
     their return values directly, no real models/network/personal data involved.
+    image_index/individuals_index are the real Index class (pure numpy, no
+    external deps) so they always match its actual public API.
     """
+    image_index = Index()
+    image_index.create("image")
+
     individuals_index = Index()
     individuals_index.create(INDIVIDUALS_COLLECTION)
+
     return {
         "image_processor": MagicMock(),
         "object_detector": MagicMock(),
-        "image_index": FakeIndex(),
+        "image_index": image_index,
         "individuals_index": individuals_index,
     }
 
