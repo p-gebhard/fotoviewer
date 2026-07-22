@@ -6,6 +6,7 @@ from fotoviewer.api.dependencies import (
     get_duplicate_groups_dependency,
     get_folder_listing_or_404,
     get_image_metadata_or_404,
+    get_individuals_overview_dependency,
 )
 
 router = APIRouter()
@@ -39,4 +40,11 @@ def sources(request: Request, overview: dict = Depends(get_data_overview_depende
 def duplicates(request: Request, groups: list = Depends(get_duplicate_groups_dependency)):
     return request.app.state.templates.TemplateResponse(
         request, "duplicates.html", {"active_page": "duplicates", "groups": groups}
+    )
+
+
+@router.get("/individuals", response_class=HTMLResponse)
+def individuals(request: Request, groups: list = Depends(get_individuals_overview_dependency)):
+    return request.app.state.templates.TemplateResponse(
+        request, "individuals.html", {"active_page": "individuals", "groups": groups}
     )

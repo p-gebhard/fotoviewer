@@ -59,7 +59,15 @@
                 ? `${detection.identity} (${Math.round(detection.identity_score * 100)}%)`
                 : `${detection.label} (${Math.round(detection.score * 100)}%)`;
               box.appendChild(labelEl);
-              box.addEventListener("click", () => tag_individual(detection.bbox));
+              box.addEventListener("click", () => {
+                if (detection.identity) {
+                  const percent = Math.round(detection.identity_score * 100);
+                  if (!confirm(`Bereits erkannt als "${detection.identity}" (${percent}%). Trotzdem neu taggen?`)) {
+                    return;
+                  }
+                }
+                tag_individual(detection.bbox);
+              });
               overlay.appendChild(box);
             });
           })

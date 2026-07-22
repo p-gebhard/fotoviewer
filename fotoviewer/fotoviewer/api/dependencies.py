@@ -8,6 +8,7 @@ from fotoviewer.services.image_files import ImageNotFoundError
 from fotoviewer.services.image_metadata import get_image_metadata
 from fotoviewer.services.image_processor import ImageProcessor
 from fotoviewer.services.indexing.index import Index
+from fotoviewer.services.individuals_store import list_individuals
 from fotoviewer.services.object_detector.object_detector import ObjectDetector
 
 
@@ -93,3 +94,10 @@ def get_duplicate_groups_dependency(
     image_index: Index = Depends(get_image_index_from_request),
 ) -> list:
     return find_duplicate_groups(image_index, request.app.state.settings.duplicate_match_threshold)
+
+
+def get_individuals_overview_dependency(
+    request: Request,
+    individuals_index: Index = Depends(get_individuals_index_from_request),
+) -> list:
+    return list_individuals(request.app.state.settings.index_dir, individuals_index)

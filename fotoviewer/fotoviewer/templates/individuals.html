@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Individuen</h2>
+
+    {% if groups %}
+      {% for group in groups %}
+        <div class="card individual-group" data-name="{{ group.name }}">
+          <div class="individual-group-header">
+            <h3>{{ group.name }} · {{ group.entries | length }} Referenz(en)</h3>
+            <div class="individual-group-actions">
+              <input type="text" class="rename-input" value="{{ group.name }}">
+              <button class="rename-group-btn">Umbenennen</button>
+              <button class="danger delete-group-btn">Individuum löschen</button>
+            </div>
+          </div>
+          <div class="individual-thumbs">
+            {% for entry in group.entries %}
+              <div class="individual-thumb" data-entry-id="{{ entry.id }}">
+                {% if entry.path %}
+                  <img src="/api/individuals/{{ entry.id }}/thumbnail">
+                {% else %}
+                  <div class="individual-thumb-placeholder">Kein Bild</div>
+                {% endif %}
+                <button class="thumb-delete" title="Referenz löschen">×</button>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="empty-state">Noch keine Individuen getaggt. Auf einer Bilddetailseite Objekte erkennen und eine Box anklicken, um zu benennen.</p>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+      function reloadOnSuccess(promise) {
+        promise
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(response.status);
+            }
+            location.reload();
+          })
+          .catch(() => alert("Aktion fehlgeschlagen"));
+      }
+
+      document.querySelectorAll(".individual-group").forEach(group => {
+        const name = group.dataset.name;
+
+        group.querySelector(".rename-group-btn").addEventListener("click", () => {
+          const newName = group.querySelector(".rename-input").value.trim();
+          if (!newName || newName === name) {
+            return;
+          }
+          reloadOnSuccess(fetch("/api/individuals/groups/" + encodeURIComponent(name), {
+            method: "PATCH",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({name: newName}),
+          }));
+        });
+
+        group.querySelector(".delete-group-btn").addEventListener("click", () => {
+          if (!confirm(`Alle Referenzen für "${name}" wirklich löschen?`)) {
+            return;
+          }
+          reloadOnSuccess(fetch("/api/individuals/groups/" + encodeURIComponent(name), {method: "DELETE"}));
+        });
+
+        group.querySelectorAll(".individual-thumb").forEach(thumb => {
+          thumb.querySelector(".thumb-delete").addEventListener("click", () => {
+            if (!confirm("Diese Referenz wirklich löschen?")) {
+              return;
+            }
+            reloadOnSuccess(fetch("/api/individuals/" + encodeURIComponent(thumb.dataset.entryId), {method: "DELETE"}));
+          });
+        });
+      });
+    </script>
+{% endblock %}
