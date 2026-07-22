@@ -30,6 +30,20 @@ def test_add_and_num_features():
     assert index.num_features("image") == 2
 
 
+def test_add_batch_appends_all_entries_at_once():
+    index = Index()
+    index.create("image")
+    index.add_batch("image", ["a.jpg", "b.jpg"], np.array([[1.0, 0.0], [0.0, 1.0]]))
+
+    assert list(index.files("image")) == ["a.jpg", "b.jpg"]
+    assert index.features("image").tolist() == [[1.0, 0.0], [0.0, 1.0]]
+
+    index.add_batch("image", ["c.jpg"], np.array([[1.0, 1.0]]))
+
+    assert list(index.files("image")) == ["a.jpg", "b.jpg", "c.jpg"]
+    assert index.num_features("image") == 3
+
+
 def test_files_and_features_expose_stored_entries():
     index = Index()
     index.create("image")

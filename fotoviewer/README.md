@@ -36,7 +36,7 @@ Beide Modellnamen sind über `FOTOVIEWER_EMBEDDING_MODEL_NAME` / `FOTOVIEWER_DET
 
 | Variable | Default | Bedeutung |
 |---|---|---|
-| `FOTOVIEWER_IMAGES_PATH` | `/home/user/Pictures/personal/` | Pfad zur Fotobibliothek |
+| `FOTOVIEWER_IMAGES_PATH` | – (Pflichtfeld) | Pfad zur Fotobibliothek |
 | `FOTOVIEWER_INDEX_DIR` | `../indices` | Ablageort der Embedding-Indizes |
 | `FOTOVIEWER_EMBEDDING_MODEL_NAME` | `google/siglip2-base-patch16-224` | Modell für Text-/Bildsuche |
 | `FOTOVIEWER_DETECTION_MODEL_NAME` | `PekingU/rtdetr_r50vd` | Modell für Objekterkennung |

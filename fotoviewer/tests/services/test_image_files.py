@@ -1,6 +1,9 @@
+import time
+
 import pytest
 from PIL import Image
 
+from fotoviewer.services import image_files
 from fotoviewer.services.image_files import ImageNotFoundError, find_image_paths, resolve_directory_path
 
 
@@ -47,3 +50,20 @@ def test_resolve_directory_path_blocks_path_traversal(tmp_path):
 
     with pytest.raises(ImageNotFoundError):
         resolve_directory_path(str(tmp_path), "../outside_secret_dir")
+
+
+def test_find_image_paths_caches_result_within_ttl(tmp_path, monkeypatch):
+    image_files._cache.clear()
+    make_image(tmp_path / "a.jpg")
+
+    first = find_image_paths(str(tmp_path))
+    make_image(tmp_path / "b.jpg")
+    second = find_image_paths(str(tmp_path))
+
+    assert first == second
+
+    future = time.monotonic() + image_files._CACHE_TTL_SECONDS + 1
+    monkeypatch.setattr(image_files.time, "monotonic", lambda: future)
+    third = find_image_paths(str(tmp_path))
+
+    assert len(third) == 2

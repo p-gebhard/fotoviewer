@@ -10,7 +10,7 @@ load_dotenv(PROJECT_ROOT / ".env")
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="FOTOVIEWER_")
 
-    images_path: str = "/home/user/Pictures/personal/"
+    images_path: str
     index_dir: str = "../indices"
     embedding_model_name: str = "google/siglip2-base-patch16-224"
     detection_model_name: str = "PekingU/rtdetr_r50vd"

@@ -49,6 +49,16 @@ class Index:
         else:
             index["features"] = features
 
+    def add_batch(self, name: str, files: List[str], features: np.ndarray) -> None:
+        index = self._loaded_indices[name]
+        new_files = np.array(files, dtype=str)
+        if index["features"].size:
+            index["features"] = np.vstack([index["features"], features])
+            index["files"] = np.hstack([index["files"], new_files])
+        else:
+            index["features"] = features
+            index["files"] = new_files
+
     def search(self, name: str, embedding: np.ndarray, k: int) -> List[Dict[str, Any]]:
         catalog_features = self._loaded_indices[name]["features"]
         files = self._loaded_indices[name]["files"]

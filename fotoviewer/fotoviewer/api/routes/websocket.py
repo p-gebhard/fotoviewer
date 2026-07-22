@@ -60,6 +60,8 @@ async def echo(
                     result = await run_in_threadpool(
                         commands.search_images_by_text, image_processor, image_index, request.query
                     )
+                else:
+                    raise AssertionError(f"Unhandled websocket command type: {type(request).__name__}")
 
                 response = WebSocketOkResponse(command=request.command, response=result)
             except ValidationError as e:

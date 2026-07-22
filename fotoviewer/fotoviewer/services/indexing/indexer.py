@@ -20,17 +20,21 @@ class Indexer:
 
         image_paths = find_image_paths(images_path)
 
-        indexed_images = 0
-        self._index.create("image")
+        rel_paths = []
+        features = []
         for full_path in tqdm(image_paths, desc="Indexing images", unit="image"):
             rel_path = os.path.relpath(full_path, images_path)
             try:
                 image = Image.open(full_path)
                 img_features = self._feature_extractor(image)
-                self._index.add("image", rel_path, img_features)
-                indexed_images += 1
+                rel_paths.append(rel_path)
+                features.append(img_features)
             except Exception as e:
                 tqdm.write(f"Ignoring image {rel_path} due to: {e}")
 
+        self._index.create("image")
+        if features:
+            self._index.add_batch("image", rel_paths, np.vstack(features))
+
         self._index.save("image", os.path.join(output_path, "image.npz"))
-        print(f"Successfully created index with {indexed_images} images")
+        print(f"Successfully created index with {len(rel_paths)} images")

@@ -1,7 +1,11 @@
 import os
+import time
 from pathlib import Path
 
 IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".bmp"]
+
+_CACHE_TTL_SECONDS = 60
+_cache: dict[str, tuple[float, list[str]]] = {}
 
 
 class ImageNotFoundError(Exception):
@@ -31,6 +35,17 @@ def resolve_directory_path(images_path: str, relative_path: str) -> Path:
 
 
 def find_image_paths(root: str) -> list[str]:
+    cached = _cache.get(root)
+    now = time.monotonic()
+    if cached is not None and now - cached[0] < _CACHE_TTL_SECONDS:
+        return cached[1]
+
+    image_paths = _walk_image_paths(root)
+    _cache[root] = (now, image_paths)
+    return image_paths
+
+
+def _walk_image_paths(root: str) -> list[str]:
     image_paths = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if not d.startswith(".")]
