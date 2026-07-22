@@ -22,7 +22,10 @@
                 {% else %}
                   <div class="individual-thumb-placeholder">Kein Bild</div>
                 {% endif %}
-                <button class="thumb-delete" title="Referenz löschen">×</button>
+                <div class="thumb-actions">
+                  <button class="thumb-rename" title="Referenz umbenennen">✎</button>
+                  <button class="danger thumb-delete" title="Referenz löschen">×</button>
+                </div>
               </div>
             {% endfor %}
           </div>
@@ -69,6 +72,18 @@
         });
 
         group.querySelectorAll(".individual-thumb").forEach(thumb => {
+          thumb.querySelector(".thumb-rename").addEventListener("click", () => {
+            const newName = window.prompt("Neuer Name für diese Referenz?", name);
+            if (!newName || newName === name) {
+              return;
+            }
+            reloadOnSuccess(fetch("/api/individuals/" + encodeURIComponent(thumb.dataset.entryId), {
+              method: "PATCH",
+              headers: {"Content-Type": "application/json"},
+              body: JSON.stringify({name: newName}),
+            }));
+          });
+
           thumb.querySelector(".thumb-delete").addEventListener("click", () => {
             if (!confirm("Diese Referenz wirklich löschen?")) {
               return;

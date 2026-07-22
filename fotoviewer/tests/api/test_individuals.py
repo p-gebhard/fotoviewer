@@ -74,6 +74,14 @@ def test_individuals_page_lists_registered_entry(client, fake_services, tmp_path
     assert "Rex" in response.text
 
 
+def test_individuals_page_offers_per_entry_rename_control(client, fake_services, tmp_path):
+    register(client, fake_services, tmp_path)
+
+    response = client.get("/individuals")
+
+    assert 'class="thumb-rename"' in response.text
+
+
 def test_individual_thumbnail_returns_cropped_jpeg(client, fake_services, tmp_path):
     register(client, fake_services, tmp_path)
     entry_id = client.get("/individuals").text
