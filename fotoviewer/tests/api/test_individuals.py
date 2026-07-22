@@ -33,6 +33,38 @@ def test_create_individual_404_for_missing_file(client):
     assert response.status_code == 404
 
 
+def test_create_individual_422_for_degenerate_bbox(client, tmp_path):
+    Image.new("RGB", (50, 50)).save(tmp_path / "photo.jpg")
+
+    response = client.post(
+        "/api/individuals",
+        json={"path": "photo.jpg", "bbox": [10, 10, 5, 5], "name": "Rex"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_create_individual_422_for_empty_name(client, tmp_path):
+    Image.new("RGB", (50, 50)).save(tmp_path / "photo.jpg")
+
+    response = client.post(
+        "/api/individuals",
+        json={"path": "photo.jpg", "bbox": [0, 0, 10, 10], "name": "   "},
+    )
+
+    assert response.status_code == 422
+
+
+def test_rename_individual_entry_422_for_empty_name(client, fake_services, tmp_path):
+    register(client, fake_services, tmp_path)
+    entry_id = client.get("/individuals").text
+    entry_id = re.search(r'data-entry-id="([^"]+)"', entry_id).group(1)
+
+    response = client.patch(f"/api/individuals/{entry_id}", json={"name": ""})
+
+    assert response.status_code == 422
+
+
 def test_individuals_page_lists_registered_entry(client, fake_services, tmp_path):
     register(client, fake_services, tmp_path)
 

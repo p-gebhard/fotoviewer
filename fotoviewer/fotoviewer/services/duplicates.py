@@ -31,16 +31,18 @@ def find_duplicate_groups(image_index: Index, threshold: float) -> list[list[dic
     for start in range(0, n, CHUNK_SIZE):
         end = min(start + CHUNK_SIZE, n)
         chunk = features[start:end]
-        scores = (1 + np.dot(chunk, features.T)) / 2
+        remaining = features[start:]
+        scores = (1 + np.dot(chunk, remaining.T)) / 2
         for local_i, global_i in enumerate(range(start, end)):
             row = scores[local_i]
-            row[global_i] = -1
-            for j in np.where(row >= threshold)[0]:
-                j = int(j)
-                union(global_i, j)
-                score = float(row[j])
+            for local_j in np.where(row >= threshold)[0]:
+                global_j = start + int(local_j)
+                if global_j <= global_i:
+                    continue
+                union(global_i, global_j)
+                score = float(row[local_j])
                 best_score[global_i] = max(best_score.get(global_i, 0.0), score)
-                best_score[j] = max(best_score.get(j, 0.0), score)
+                best_score[global_j] = max(best_score.get(global_j, 0.0), score)
 
     groups = {}
     for i in range(n):

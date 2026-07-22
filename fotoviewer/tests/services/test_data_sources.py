@@ -42,6 +42,7 @@ def test_get_data_overview_reports_counts_and_paths(tmp_path):
     assert overview["individuals_index"]["num_unique_names"] == 1
     assert overview["embedding_model_name"] == settings.embedding_model_name
     assert overview["detection_model_name"] == settings.detection_model_name
+    assert overview["duplicate_match_threshold"] == settings.duplicate_match_threshold
 
 
 def test_get_data_overview_handles_missing_index_files(tmp_path):

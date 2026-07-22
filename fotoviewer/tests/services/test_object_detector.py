@@ -7,7 +7,7 @@ from PIL import Image
 from fotoviewer.services.object_detector.object_detector import ObjectDetector
 
 
-def make_detector(monkeypatch, model, processor, device="cpu"):
+def make_detector(monkeypatch, model, processor, device="cpu", threshold=0.7):
     monkeypatch.setattr(
         "fotoviewer.services.object_detector.object_detector.RTDetrForObjectDetection.from_pretrained",
         lambda name: model,
@@ -16,7 +16,7 @@ def make_detector(monkeypatch, model, processor, device="cpu"):
         "fotoviewer.services.object_detector.object_detector.RTDetrImageProcessor.from_pretrained",
         lambda name: processor,
     )
-    return ObjectDetector(device)
+    return ObjectDetector(device, threshold=threshold)
 
 
 def test_detect_returns_labeled_detections(monkeypatch):
@@ -59,3 +59,20 @@ def test_model_and_inputs_are_moved_to_the_requested_device(monkeypatch):
 
     model.to.assert_called_once_with("cuda")
     processor_output.to.assert_called_once_with("cuda")
+
+
+def test_detect_passes_configured_threshold(monkeypatch):
+    model = MagicMock()
+    model.to.return_value = model
+    processor_output = MagicMock()
+    processor_output.to.return_value = {"pixel_values": torch.zeros(1, 3, 640, 640)}
+    processor = MagicMock(return_value=processor_output)
+    processor.post_process_object_detection.return_value = [
+        {"scores": torch.tensor([]), "labels": torch.tensor([], dtype=torch.long), "boxes": torch.zeros(0, 4)}
+    ]
+
+    detector = make_detector(monkeypatch, model, processor, threshold=0.4)
+    detector.detect(Image.new("RGB", (10, 10)))
+
+    _, kwargs = processor.post_process_object_detection.call_args
+    assert kwargs["threshold"] == 0.4

@@ -4,8 +4,9 @@ from transformers import RTDetrForObjectDetection, RTDetrImageProcessor
 
 class ObjectDetector:
 
-    def __init__(self, device, model_name: str = "PekingU/rtdetr_r50vd") -> None:
+    def __init__(self, device, model_name: str = "PekingU/rtdetr_r50vd", threshold: float = 0.7) -> None:
         self._device = device
+        self._threshold = threshold
         self._model = RTDetrForObjectDetection.from_pretrained(model_name).to(device)
         self._model.eval()
         self._processor = RTDetrImageProcessor.from_pretrained(model_name)
@@ -17,7 +18,7 @@ class ObjectDetector:
 
         target_sizes = torch.tensor([im.size[::-1]])
         results = self._processor.post_process_object_detection(
-            outputs, threshold=0.7, target_sizes=target_sizes
+            outputs, threshold=self._threshold, target_sizes=target_sizes
         )[0]
 
         return [

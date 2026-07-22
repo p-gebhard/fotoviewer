@@ -16,4 +16,5 @@ class Settings(BaseSettings):
     detection_model_name: str = "PekingU/rtdetr_r50vd"
     identity_match_threshold: float = 0.75
     duplicate_match_threshold: float = 0.95
+    detection_threshold: float = 0.7
     device: str | None = None

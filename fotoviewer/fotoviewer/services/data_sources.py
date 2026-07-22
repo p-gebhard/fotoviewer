@@ -37,6 +37,7 @@ def get_data_overview(settings: Settings, image_index: Index, individuals_index:
         "embedding_model_name": settings.embedding_model_name,
         "detection_model_name": settings.detection_model_name,
         "identity_match_threshold": settings.identity_match_threshold,
+        "duplicate_match_threshold": settings.duplicate_match_threshold,
         "image_index": image_stats,
         "individuals_index": individuals_stats,
     }

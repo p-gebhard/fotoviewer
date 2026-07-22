@@ -19,6 +19,19 @@ uv run uvicorn fotoviewer.main:app --reload
 
 App läuft dann unter `http://127.0.0.1:8000`.
 
+Die App bindet standardmäßig nur an `127.0.0.1` und hat **keine Authentifizierung** — das ist für ein lokales Ein-Personen-Tool eine bewusste Entscheidung. Vor dem Binden an `0.0.0.0` oder einer Freigabe im Netzwerk sollte ein Auth-Layer (z.B. ein Reverse Proxy mit Basic Auth) davorgesetzt werden.
+
+## Seiten
+
+| Route | Inhalt |
+|---|---|
+| `/` | Semantische Text-/Bildsuche |
+| `/image?path=...` | Detailseite: Metadaten, Objekterkennung, Individuen-Tagging |
+| `/folders` | Datei-Browser über die konfigurierte Fotobibliothek |
+| `/sources` | Übersicht über Indizes, Modelle und Schwellwerte |
+| `/individuals` | Verwaltung der Individuen-Galerie (umbenennen, löschen) |
+| `/duplicates` | Anzeige möglicher Duplikat-Gruppen (nur Review, kein Löschen) |
+
 ## Modelle
 
 Alle Modelle laufen lokal über [`transformers`](https://github.com/huggingface/transformers), es gibt keine weiteren Modelle im Projekt.
@@ -41,6 +54,8 @@ Beide Modellnamen sind über `FOTOVIEWER_EMBEDDING_MODEL_NAME` / `FOTOVIEWER_DET
 | `FOTOVIEWER_EMBEDDING_MODEL_NAME` | `google/siglip2-base-patch16-224` | Modell für Text-/Bildsuche |
 | `FOTOVIEWER_DETECTION_MODEL_NAME` | `PekingU/rtdetr_r50vd` | Modell für Objekterkennung |
 | `FOTOVIEWER_IDENTITY_MATCH_THRESHOLD` | `0.75` | Schwellwert für Individuen-Wiedererkennung (siehe Einschränkungen unten) |
+| `FOTOVIEWER_DUPLICATE_MATCH_THRESHOLD` | `0.95` | Schwellwert für die Duplikat-Erkennung auf `/duplicates` |
+| `FOTOVIEWER_DETECTION_THRESHOLD` | `0.7` | Mindest-Score, ab dem RT-DETR eine Erkennung meldet |
 
 Zusätzlich `HF_HOME`, um den Hugging-Face-Modell-Cache auf ein Laufwerk mit ausreichend Speicherplatz zu legen (Standard ist `~/.cache/huggingface`; die Modelle summieren sich auf mehrere GB).
 
