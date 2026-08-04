@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import numpy as np
+import pytest
 from PIL import Image
 
 from fotoviewer.services.identity import (
@@ -62,6 +63,42 @@ def test_identify_crop_returns_none_below_threshold():
 
     assert identity is None
     assert score is None
+
+
+def test_identify_crop_averages_multiple_references_of_the_same_name():
+    individuals_index = Index()
+    individuals_index.create(INDIVIDUALS_COLLECTION)
+    individuals_index.add(INDIVIDUALS_COLLECTION, "Rex", unit(np.array([[1.0, 0.0]])))  # score 1.0
+    individuals_index.add(INDIVIDUALS_COLLECTION, "Rex", unit(np.array([[0.0, 1.0]])))  # score 0.5
+
+    image_processor = MagicMock()
+    image_processor.compute_image_features.return_value = unit(np.array([[1.0, 0.0]]))
+
+    identity, score = identify_crop(image_processor, individuals_index, Image.new("RGB", (5, 5)), threshold=0.7)
+
+    assert identity == "Rex"
+    assert score == pytest.approx(0.75)
+
+
+def test_identify_crop_ignores_a_single_lucky_match_diluted_by_other_references():
+    individuals_index = Index()
+    individuals_index.create(INDIVIDUALS_COLLECTION)
+    # Rex: two consistently similar references (score 0.8 each).
+    individuals_index.add(INDIVIDUALS_COLLECTION, "Rex", unit(np.array([[3.0, 4.0]])))
+    individuals_index.add(INDIVIDUALS_COLLECTION, "Rex", unit(np.array([[3.0, 4.0]])))
+    # Mia: one near-perfect match (score 1.0) but a second, clearly different reference (score 0.0).
+    individuals_index.add(INDIVIDUALS_COLLECTION, "Mia", unit(np.array([[1.0, 0.0]])))
+    individuals_index.add(INDIVIDUALS_COLLECTION, "Mia", unit(np.array([[-1.0, 0.0]])))
+
+    image_processor = MagicMock()
+    image_processor.compute_image_features.return_value = unit(np.array([[1.0, 0.0]]))
+
+    identity, score = identify_crop(image_processor, individuals_index, Image.new("RGB", (5, 5)), threshold=0.6)
+
+    # A naive best-single-match would have picked Mia's 1.0 score entry; averaging
+    # per name correctly prefers Rex's more consistent 0.8 average instead.
+    assert identity == "Rex"
+    assert score == pytest.approx(0.8)
 
 
 def test_identify_detections_enriches_each_detection():

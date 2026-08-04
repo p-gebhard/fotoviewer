@@ -82,9 +82,11 @@ Auf der Bild-Detailseite lässt sich eine erkannte Box mit einem Namen versehen 
 
 **Ursache:** SigLIP2 (`FOTOVIEWER_EMBEDDING_MODEL_NAME`) ist ein Allzweck-Vision-Language-Embedding, trainiert auf grobe semantische Ähnlichkeit ("das ist eine Person", "das ist ein Pferd"), nicht auf feingranulare Identitäts-Unterscheidung zwischen zwei verschiedenen Personen oder Tieren. Generische Bounding-Box-Crops landen im Embedding-Raum näher beieinander, als für zuverlässige Wiedererkennung nötig wäre — Pose, Beleuchtung und Hintergrund beeinflussen das Embedding stärker als die Identität selbst.
 
-**Mögliche nächste Schritte** (keiner davon bisher umgesetzt):
+**Umgesetzte Abmilderung:** Statt nur den einen ähnlichsten Referenz-Crop zu vergleichen, mittelt `identify_crop` ([fotoviewer/services/identity.py](fotoviewer/services/identity.py)) den Score über *alle* Referenzfotos eines Namens und vergleicht dann die Durchschnittswerte der Kandidaten-Individuen. Ein einzelner zufällig sehr ähnlicher Fehltreffer wird so von den übrigen, weniger ähnlichen Referenzfotos desselben Namens abgeschwächt — bei nur einer Referenz bleibt das Verhalten unverändert. Das mindert das oben beschriebene Problem, löst es aber nicht grundsätzlich: Bei durchgängig fehlklassifizierten Referenzfotos (z.B. wenn alle Referenzen eines falschen Namens zufällig ähnlich aussehen) bleibt die Fehlerkennung bestehen.
+
+**Weitere mögliche Schritte** (bisher nicht umgesetzt):
 - Schwellwert deutlich anheben (z.B. 0.95+) — riskiert dann False Negatives bei echten Wiedererkennungen in anderer Pose/Beleuchtung.
-- Mehrere Referenzfotos pro Individuum verlangen und über Durchschnitts-/Best-Match robuster matchen statt nur einen einzelnen Crop zu vergleichen.
+- Mindestanzahl an Referenzfotos pro Individuum erzwingen, bevor ein Name überhaupt als Match infrage kommt.
 - Dedizierte Embeddings für Personen (Gesichtserkennung) ergänzen — SigLIP2 ist dafür nicht das richtige Werkzeug, würde aber eine zusätzliche Modell-Dependency bedeuten.
 
 ### Objekterkennung ist auf 91 COCO-Klassen begrenzt

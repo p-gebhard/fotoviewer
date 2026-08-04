@@ -13,13 +13,27 @@ def crop_detection(image: Image.Image, bbox: list[float]) -> Image.Image:
 def identify_crop(
     image_processor: ImageProcessor, individuals_index: Index, crop_image: Image.Image, threshold: float
 ) -> tuple[str | None, float | None]:
-    if not individuals_index.exists(INDIVIDUALS_COLLECTION) or individuals_index.num_features(INDIVIDUALS_COLLECTION) == 0:
+    num_entries = individuals_index.num_features(INDIVIDUALS_COLLECTION) if individuals_index.exists(INDIVIDUALS_COLLECTION) else 0
+    if num_entries == 0:
         return None, None
 
     features = image_processor.compute_image_features(crop_image)
-    best = individuals_index.search(INDIVIDUALS_COLLECTION, features, k=1)[0]
-    if best["score"] >= threshold:
-        return str(best["file"]), float(best["score"])
+    matches = individuals_index.search(INDIVIDUALS_COLLECTION, features, k=num_entries)
+
+    # Averaging across all reference photos of a name (instead of trusting a single
+    # closest embedding) smooths out one-off false positives from an unlucky crop.
+    scores_by_name: dict[str, list[float]] = {}
+    for match in matches:
+        scores_by_name.setdefault(str(match["file"]), []).append(float(match["score"]))
+
+    best_name, best_score = None, 0.0
+    for name, scores in scores_by_name.items():
+        average = sum(scores) / len(scores)
+        if average > best_score:
+            best_name, best_score = name, average
+
+    if best_name is not None and best_score >= threshold:
+        return best_name, best_score
     return None, None
 
 
