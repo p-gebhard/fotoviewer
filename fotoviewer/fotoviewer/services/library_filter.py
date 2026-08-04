@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fotoviewer.services.identity import identify_embedding
+from fotoviewer.services.image_files import ImageNotFoundError
 from fotoviewer.services.image_metadata import get_image_metadata
 from fotoviewer.services.indexing.detection_indexer import DETECTIONS_COLLECTION
 from fotoviewer.services.indexing.index import Index
@@ -28,7 +29,11 @@ def _matched_individuals(detections_index: Index, individuals_index: Index, name
 
 
 def _year_of(images_path: str, file_path: str) -> int | None:
-    date_taken = get_image_metadata(images_path, file_path).get("date_taken")
+    try:
+        date_taken = get_image_metadata(images_path, file_path).get("date_taken")
+    except ImageNotFoundError:
+        # Index may reference a file that has since been moved or deleted on disk.
+        return None
     if not date_taken:
         return None
     try:

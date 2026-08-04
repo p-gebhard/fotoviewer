@@ -43,6 +43,18 @@
       </div>
 
       <div class="stat-card card">
+        <h3>Detections-Index</h3>
+        <dl>
+          <dt>Datei</dt>
+          <dd>{{ overview.detections_index.path }}</dd>
+          <dt>Erkannte Objekte</dt>
+          <dd>{{ overview.detections_index.num_entries }}</dd>
+          <dt>Zuletzt geändert</dt>
+          <dd>{{ overview.detections_index.last_modified or "-" }}</dd>
+        </dl>
+      </div>
+
+      <div class="stat-card card">
         <h3>Modelle</h3>
         <dl>
           <dt>Text-/Bildsuche</dt>

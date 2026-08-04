@@ -4,6 +4,7 @@ from pathlib import Path
 from fotoviewer.core.config import Settings
 from fotoviewer.services.identity import INDIVIDUALS_COLLECTION
 from fotoviewer.services.image_files import find_image_paths
+from fotoviewer.services.indexing.detection_indexer import DETECTIONS_COLLECTION
 from fotoviewer.services.indexing.index import Index
 
 
@@ -21,7 +22,7 @@ def _index_file_stats(index: Index, collection: str, file_path: Path) -> dict:
     return stats
 
 
-def get_data_overview(settings: Settings, image_index: Index, individuals_index: Index) -> dict:
+def get_data_overview(settings: Settings, image_index: Index, individuals_index: Index, detections_index: Index) -> dict:
     index_dir = Path(settings.index_dir)
 
     image_stats = _index_file_stats(image_index, "image", index_dir / "image.npz")
@@ -30,6 +31,8 @@ def get_data_overview(settings: Settings, image_index: Index, individuals_index:
     individuals_stats["num_unique_names"] = (
         len(set(individuals_index.files(INDIVIDUALS_COLLECTION))) if individuals_index.exists(INDIVIDUALS_COLLECTION) else 0
     )
+
+    detections_stats = _index_file_stats(detections_index, DETECTIONS_COLLECTION, index_dir / "detections.npz")
 
     return {
         "images_path": settings.images_path,
@@ -40,4 +43,5 @@ def get_data_overview(settings: Settings, image_index: Index, individuals_index:
         "duplicate_match_threshold": settings.duplicate_match_threshold,
         "image_index": image_stats,
         "individuals_index": individuals_stats,
+        "detections_index": detections_stats,
     }

@@ -117,6 +117,32 @@ def test_filter_library_excludes_photos_without_date_when_year_filter_active(tmp
     assert result == []
 
 
+def test_filter_library_excludes_unparseable_date_when_year_filter_active(tmp_path):
+    path = tmp_path / "bad_date.jpg"
+    image = Image.new("RGB", (10, 10))
+    exif = image.getexif()
+    exif[306] = "not-a-date"
+    image.save(path, exif=exif)
+    image_index = make_image_index(["bad_date.jpg"])
+
+    result = filter_library(image_index, Index(), Index(), str(tmp_path), 0.75, year_from=2000)
+
+    assert result == []
+
+
+def test_filter_library_excludes_stale_index_entry_instead_of_crashing(tmp_path):
+    make_dated_photo(tmp_path, "still_here.jpg", "2003:07:12 10:00:00")
+    image_index = make_image_index(["still_here.jpg", "deleted.jpg"])
+
+    result = filter_library(image_index, Index(), Index(), str(tmp_path), 0.75, year_from=2000, year_to=2005)
+
+    assert result == ["still_here.jpg"]
+
+
+def test_list_folder_options_returns_empty_for_missing_image_collection():
+    assert list_folder_options(Index()) == []
+
+
 def test_filter_library_combines_folder_and_individual_filters():
     image_index = make_image_index(["Urlaub/a.jpg", "Andere/a.jpg"])
     individuals_index = Index()

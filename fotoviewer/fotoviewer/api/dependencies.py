@@ -91,8 +91,9 @@ def get_data_overview_dependency(
     request: Request,
     image_index: Index = Depends(get_image_index_from_request),
     individuals_index: Index = Depends(get_individuals_index_from_request),
+    detections_index: Index = Depends(get_detections_index_from_request),
 ) -> dict:
-    return get_data_overview(request.app.state.settings, image_index, individuals_index)
+    return get_data_overview(request.app.state.settings, image_index, individuals_index, detections_index)
 
 
 def get_duplicate_groups_dependency(

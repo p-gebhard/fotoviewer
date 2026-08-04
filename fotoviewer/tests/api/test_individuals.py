@@ -44,6 +44,17 @@ def test_create_individual_422_for_degenerate_bbox(client, tmp_path):
     assert response.status_code == 422
 
 
+def test_create_individual_422_for_wrong_bbox_length(client, tmp_path):
+    Image.new("RGB", (50, 50)).save(tmp_path / "photo.jpg")
+
+    response = client.post(
+        "/api/individuals",
+        json={"path": "photo.jpg", "bbox": [0, 0, 10], "name": "Rex"},
+    )
+
+    assert response.status_code == 422
+
+
 def test_create_individual_422_for_empty_name(client, tmp_path):
     Image.new("RGB", (50, 50)).save(tmp_path / "photo.jpg")
 
@@ -95,6 +106,29 @@ def test_individual_thumbnail_returns_cropped_jpeg(client, fake_services, tmp_pa
 
 def test_individual_thumbnail_404_for_unknown_entry(client):
     response = client.get("/api/individuals/does-not-exist/thumbnail")
+
+    assert response.status_code == 404
+
+
+def test_individual_thumbnail_404_for_legacy_entry_without_stored_crop(client, fake_services):
+    # Entry added directly to the index (bypassing the API) has no metadata sidecar
+    # entry, mirroring individuals registered before individuals_meta.json existed.
+    fake_services["individuals_index"].add(INDIVIDUALS_COLLECTION, "Legacy", np.array([[1.0, 0.0]]))
+    entry_id = client.get("/individuals").text
+    entry_id = re.search(r'data-entry-id="([^"]+)"', entry_id).group(1)
+
+    response = client.get(f"/api/individuals/{entry_id}/thumbnail")
+
+    assert response.status_code == 404
+
+
+def test_individual_thumbnail_404_when_source_image_deleted(client, fake_services, tmp_path):
+    register(client, fake_services, tmp_path)
+    entry_id = client.get("/individuals").text
+    entry_id = re.search(r'data-entry-id="([^"]+)"', entry_id).group(1)
+    (tmp_path / "photo.jpg").unlink()
+
+    response = client.get(f"/api/individuals/{entry_id}/thumbnail")
 
     assert response.status_code == 404
 

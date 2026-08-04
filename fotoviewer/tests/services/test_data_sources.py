@@ -30,9 +30,13 @@ def test_get_data_overview_reports_counts_and_paths(tmp_path):
     individuals_index.add(INDIVIDUALS_COLLECTION, "Rex", np.array([[1.0, 0.0]]))
     individuals_index.add(INDIVIDUALS_COLLECTION, "Rex", np.array([[0.0, 1.0]]))
 
+    detections_index = Index()
+    detections_index.create("detections")
+    detections_index.add("detections", "a.jpg", np.array([[1.0, 0.0]]))
+
     settings = Settings(images_path=str(images_dir), index_dir=str(index_dir))
 
-    overview = get_data_overview(settings, image_index, individuals_index)
+    overview = get_data_overview(settings, image_index, individuals_index, detections_index)
 
     assert overview["images_path"] == str(images_dir)
     assert overview["total_files_on_disk"] == 2
@@ -40,6 +44,7 @@ def test_get_data_overview_reports_counts_and_paths(tmp_path):
     assert overview["image_index"]["size_bytes"] == 4
     assert overview["individuals_index"]["num_entries"] == 2
     assert overview["individuals_index"]["num_unique_names"] == 1
+    assert overview["detections_index"]["num_entries"] == 1
     assert overview["embedding_model_name"] == settings.embedding_model_name
     assert overview["detection_model_name"] == settings.detection_model_name
     assert overview["duplicate_match_threshold"] == settings.duplicate_match_threshold
@@ -53,8 +58,9 @@ def test_get_data_overview_handles_missing_index_files(tmp_path):
 
     settings = Settings(images_path=str(images_dir), index_dir=str(index_dir))
 
-    overview = get_data_overview(settings, Index(), Index())
+    overview = get_data_overview(settings, Index(), Index(), Index())
 
     assert overview["image_index"]["num_entries"] == 0
     assert overview["image_index"]["size_bytes"] is None
     assert overview["individuals_index"]["num_unique_names"] == 0
+    assert overview["detections_index"]["num_entries"] == 0
