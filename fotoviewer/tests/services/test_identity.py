@@ -9,6 +9,7 @@ from fotoviewer.services.identity import (
     crop_detection,
     identify_crop,
     identify_detections,
+    identify_embedding,
     register_individual,
 )
 from fotoviewer.services.indexing.index import Index
@@ -99,6 +100,24 @@ def test_identify_crop_ignores_a_single_lucky_match_diluted_by_other_references(
     # per name correctly prefers Rex's more consistent 0.8 average instead.
     assert identity == "Rex"
     assert score == pytest.approx(0.8)
+
+
+def test_identify_embedding_matches_precomputed_embedding_without_image_processor():
+    individuals_index = Index()
+    individuals_index.create(INDIVIDUALS_COLLECTION)
+    individuals_index.add(INDIVIDUALS_COLLECTION, "Rex", unit(np.array([[1.0, 0.0]])))
+
+    identity, score = identify_embedding(individuals_index, unit(np.array([[1.0, 0.0]])), threshold=0.75)
+
+    assert identity == "Rex"
+    assert score == 1.0
+
+
+def test_identify_embedding_returns_none_for_empty_gallery():
+    identity, score = identify_embedding(Index(), unit(np.array([[1.0, 0.0]])), threshold=0.75)
+
+    assert identity is None
+    assert score is None
 
 
 def test_identify_detections_enriches_each_detection():

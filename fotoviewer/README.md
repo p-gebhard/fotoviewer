@@ -31,6 +31,7 @@ Die App bindet standardmäßig nur an `127.0.0.1` und hat **keine Authentifizier
 | `/sources` | Übersicht über Indizes, Modelle und Schwellwerte |
 | `/individuals` | Verwaltung der Individuen-Galerie (umbenennen, löschen) |
 | `/duplicates` | Anzeige möglicher Duplikat-Gruppen (nur Review, kein Löschen) |
+| `/filter` | Bibliothek nach Ordner, Individuum und Zeitraum filtern (siehe unten) |
 
 ## Modelle
 
@@ -65,6 +66,18 @@ Zusätzlich `HF_HOME`, um den Hugging-Face-Modell-Cache auf ein Laufwerk mit aus
 uv run fotoviewer-create-index
 uv run fotoviewer-search <bildpfad>
 ```
+
+## Bibliotheks-Filter (`/filter`)
+
+Um die gesamte Bibliothek nach Ordner, Individuum und Aufnahmejahr filterbar zu machen (statt nur einzelne Fotos per Text-/Bildsuche zu finden), läuft ein zusätzlicher, optionaler Indizierungsschritt:
+
+```
+uv run fotoviewer-index-detections
+```
+
+Das führt RT-DETR einmal über jedes Foto der Bibliothek und speichert nur die **Embeddings der erkannten Objekt-Ausschnitte** (keine Namen) in `detections.npz` — die eigentliche Identitäts-Zuordnung passiert bei jeder Filter-Anfrage live gegen die aktuelle Individuen-Galerie ([fotoviewer/services/identity.py](fotoviewer/services/identity.py), [fotoviewer/services/library_filter.py](fotoviewer/services/library_filter.py)). Dadurch wirkt ein neu getaggtes Individuum sofort im Filter, ohne dass `fotoviewer-index-detections` erneut laufen muss — nur wenn neue Fotos zur Bibliothek hinzukommen, muss der Befehl erneut ausgeführt werden.
+
+Der Zeitraum-Filter liest das Aufnahmedatum live per EXIF (kein eigener Cache) — bei sehr großen Bibliotheken kann das spürbar dauern, und Fotos ohne (verlässliches) EXIF-Datum werden bei aktivem Zeitraum-Filter ausgeschlossen statt geraten.
 
 ## Tests
 

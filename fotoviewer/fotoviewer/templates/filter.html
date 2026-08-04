@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Filter</h2>
+
+    <form method="get" action="/filter" class="card filter-form">
+      <div class="search-row">
+        <label>
+          Ordner
+          <select name="folder">
+            <option value="">Alle</option>
+            {% for option in folder_options %}
+              <option value="{{ option }}" {{ "selected" if selected.folder == option }}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label>
+          Individuum
+          <select name="individual">
+            <option value="">Alle</option>
+            {% for option in individual_options %}
+              <option value="{{ option }}" {{ "selected" if selected.individual == option }}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+
+      <div class="search-row">
+        <label>
+          Jahr von
+          <input type="number" name="year_from" value="{{ selected.year_from }}" placeholder="z. B. 2003">
+        </label>
+        <label>
+          Jahr bis
+          <input type="number" name="year_to" value="{{ selected.year_to }}" placeholder="z. B. 2003">
+        </label>
+        <button type="submit">Filtern</button>
+      </div>
+    </form>
+
+    {% if selected.individual and not detections_indexed %}
+      <p class="empty-state">
+        Für die Individuen-Erkennung über die gesamte Bibliothek muss einmalig <code>fotoviewer-index-detections</code>
+        laufen — bisher wurden noch keine Objekte in der Bibliothek indiziert.
+      </p>
+    {% elif files %}
+      <p class="empty-state">{{ files | length }} Foto(s) gefunden.</p>
+      <div class="results-grid">
+        {% for file in files %}
+          <a href="/image?path={{ file | urlencode }}">
+            <img class="simimg" src="/images/{{ file }}">
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty-state">Keine Fotos gefunden.</p>
+    {% endif %}
+{% endblock %}

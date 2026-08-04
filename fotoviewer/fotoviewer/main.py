@@ -10,6 +10,7 @@ from fotoviewer.api.routes import detection, individuals, metadata, pages, webso
 from fotoviewer.core.config import Settings
 from fotoviewer.services.identity import INDIVIDUALS_COLLECTION
 from fotoviewer.services.image_processor import ImageProcessor
+from fotoviewer.services.indexing.detection_indexer import DETECTIONS_COLLECTION
 from fotoviewer.services.indexing.index import Index
 from fotoviewer.services.object_detector.object_detector import ObjectDetector
 
@@ -32,6 +33,13 @@ async def lifespan(app: FastAPI):
         app.state.individuals_index.load(INDIVIDUALS_COLLECTION, str(individuals_path))
     else:
         app.state.individuals_index.create(INDIVIDUALS_COLLECTION)
+
+    app.state.detections_index = Index()
+    detections_path = Path(settings.index_dir) / "detections.npz"
+    if detections_path.exists():
+        app.state.detections_index.load(DETECTIONS_COLLECTION, str(detections_path))
+    else:
+        app.state.detections_index.create(DETECTIONS_COLLECTION)
     yield
 
 

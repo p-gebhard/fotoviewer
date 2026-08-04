@@ -1,3 +1,4 @@
+import numpy as np
 from PIL import Image
 
 from fotoviewer.services.image_processor import ImageProcessor
@@ -10,15 +11,14 @@ def crop_detection(image: Image.Image, bbox: list[float]) -> Image.Image:
     return image.crop(tuple(bbox))
 
 
-def identify_crop(
-    image_processor: ImageProcessor, individuals_index: Index, crop_image: Image.Image, threshold: float
+def identify_embedding(
+    individuals_index: Index, embedding: np.ndarray, threshold: float
 ) -> tuple[str | None, float | None]:
     num_entries = individuals_index.num_features(INDIVIDUALS_COLLECTION) if individuals_index.exists(INDIVIDUALS_COLLECTION) else 0
     if num_entries == 0:
         return None, None
 
-    features = image_processor.compute_image_features(crop_image)
-    matches = individuals_index.search(INDIVIDUALS_COLLECTION, features, k=num_entries)
+    matches = individuals_index.search(INDIVIDUALS_COLLECTION, embedding, k=num_entries)
 
     # Averaging across all reference photos of a name (instead of trusting a single
     # closest embedding) smooths out one-off false positives from an unlucky crop.
@@ -35,6 +35,16 @@ def identify_crop(
     if best_name is not None and best_score >= threshold:
         return best_name, best_score
     return None, None
+
+
+def identify_crop(
+    image_processor: ImageProcessor, individuals_index: Index, crop_image: Image.Image, threshold: float
+) -> tuple[str | None, float | None]:
+    if not individuals_index.exists(INDIVIDUALS_COLLECTION) or individuals_index.num_features(INDIVIDUALS_COLLECTION) == 0:
+        return None, None
+
+    features = image_processor.compute_image_features(crop_image)
+    return identify_embedding(individuals_index, features, threshold)
 
 
 def identify_detections(

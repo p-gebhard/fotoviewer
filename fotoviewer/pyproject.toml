@@ -25,6 +25,7 @@ dev = ["pytest", "httpx"]
 [project.scripts]
 fotoviewer-create-index = "fotoviewer.cli.create_index:main"
 fotoviewer-search = "fotoviewer.cli.search:main"
+fotoviewer-index-detections = "fotoviewer.cli.index_detections:main"
 
 [build-system]
 requires = ["setuptools>=68"]
