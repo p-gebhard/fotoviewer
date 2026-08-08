@@ -5,29 +5,58 @@
       <h2>Suche</h2>
       <div class="search-row">
         <input type="text" id="text_query" placeholder="z. B. ein Hund am Strand">
-        <button onclick="search_by_text()">Suchen</button>
+        <button id="text_search_btn" onclick="search_by_text()">Suchen</button>
       </div>
       <div class="search-row">
         <input type="file" id="file" accept="image/*">
-        <button onclick="upload_image()">Ähnliche Bilder finden</button>
+        <button id="upload_btn" onclick="upload_image()">Ähnliche Bilder finden</button>
       </div>
       <div id="log" class="log"></div>
     </section>
 
     <div id="similar_images" class="results-grid"></div>
+    <p id="empty_hint" class="empty-state">Suche nach einem Motiv oder lade ein Bild hoch, um ähnliche Fotos zu finden.</p>
 {% endblock %}
 
 {% block scripts %}
     <script>
       const socket = new WebSocket('ws://' + location.host + '/echo');
+      const textInput = document.getElementById("text_query");
+      const searchBtn = document.getElementById("text_search_btn");
+      const uploadBtn = document.getElementById("upload_btn");
+      const emptyHint = document.getElementById("empty_hint");
+      const resultsContainer = document.getElementById("similar_images");
+
+      let busy = false;
+
+      function setBusy(isBusy) {
+        busy = isBusy;
+        searchBtn.disabled = isBusy;
+        uploadBtn.disabled = isBusy;
+      }
+
+      function log(text, isError) {
+        const el = document.getElementById("log");
+        el.textContent = text || "";
+        el.style.color = isError ? "var(--color-danger)" : "";
+      }
+
       socket.addEventListener('message', msg => {
-        data = JSON.parse(msg.data)
+        setBusy(false);
+        const data = JSON.parse(msg.data);
         if (data.status != "ok") {
-          log(`${data.status}: ${data.reason}`);
+          log(data.reason, true);
+          return;
         }
-        else if (data.command == "search_similar_images" || data.command == "search_images_by_text") {
-          const container = document.getElementById("similar_images");
-          container.innerHTML = "";
+        if (data.command == "search_similar_images" || data.command == "search_images_by_text") {
+          log("");
+          resultsContainer.innerHTML = "";
+          if (data.response.length === 0) {
+            emptyHint.textContent = "Keine ähnlichen Fotos gefunden.";
+            emptyHint.style.display = "";
+            return;
+          }
+          emptyHint.style.display = "none";
           data.response.forEach(image => {
             const link = document.createElement("a");
             link.href = "/image?path=" + encodeURIComponent(image.file);
@@ -35,37 +64,49 @@
             img.className = "simimg";
             img.src = "/images/" + image.file;
             link.appendChild(img);
-            container.appendChild(link);
+            resultsContainer.appendChild(link);
           });
         }
-      })
+      });
 
-      function log(text, color) {
-        document.getElementById("log").innerHTML = `<span style="color: ${color}">${text}</span><br>`;
-      }
+      socket.addEventListener('close', () => log("Verbindung getrennt – bitte Seite neu laden.", true));
 
-      function upload_image(event) {
-        var input = document.querySelector("input[type='file']");
+      function upload_image() {
+        if (busy) {
+          return;
+        }
+        const input = document.querySelector("input[type='file']");
+        if (!input.files.length) {
+          return;
+        }
         const reader = new FileReader();
         reader.onloadend = () => {
           // Use a regex to remove data url part
           const base64String = reader.result.replace("data:", "").replace(/^.+,/, "");
-          var data = {
-            command: "search_similar_images",
-            image: base64String
-          }
-          socket.send(JSON.stringify(data));
+          setBusy(true);
+          log("Suche läuft …");
+          socket.send(JSON.stringify({command: "search_similar_images", image: base64String}));
         };
         reader.readAsDataURL(input.files[0]);
       }
 
       function search_by_text() {
-        const query = document.getElementById("text_query").value;
-        var data = {
-          command: "search_images_by_text",
-          query: query
+        if (busy) {
+          return;
         }
-        socket.send(JSON.stringify(data));
+        const query = textInput.value.trim();
+        if (!query) {
+          return;
+        }
+        setBusy(true);
+        log("Suche läuft …");
+        socket.send(JSON.stringify({command: "search_images_by_text", query: query}));
       }
+
+      textInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+          search_by_text();
+        }
+      });
     </script>
 {% endblock %}

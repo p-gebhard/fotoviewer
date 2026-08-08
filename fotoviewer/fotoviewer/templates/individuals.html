@@ -38,7 +38,8 @@
 
 {% block scripts %}
     <script>
-      function reloadOnSuccess(promise) {
+      function reloadOnSuccess(button, promise) {
+        button.disabled = true;
         promise
           .then(response => {
             if (!response.ok) {
@@ -46,49 +47,52 @@
             }
             location.reload();
           })
-          .catch(() => alert("Aktion fehlgeschlagen"));
+          .catch(() => {
+            alert("Aktion fehlgeschlagen");
+            button.disabled = false;
+          });
       }
 
       document.querySelectorAll(".individual-group").forEach(group => {
         const name = group.dataset.name;
 
-        group.querySelector(".rename-group-btn").addEventListener("click", () => {
+        group.querySelector(".rename-group-btn").addEventListener("click", event => {
           const newName = group.querySelector(".rename-input").value.trim();
           if (!newName || newName === name) {
             return;
           }
-          reloadOnSuccess(fetch("/api/individuals/groups/" + encodeURIComponent(name), {
+          reloadOnSuccess(event.currentTarget, fetch("/api/individuals/groups/" + encodeURIComponent(name), {
             method: "PATCH",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({name: newName}),
           }));
         });
 
-        group.querySelector(".delete-group-btn").addEventListener("click", () => {
+        group.querySelector(".delete-group-btn").addEventListener("click", event => {
           if (!confirm(`Alle Referenzen für "${name}" wirklich löschen?`)) {
             return;
           }
-          reloadOnSuccess(fetch("/api/individuals/groups/" + encodeURIComponent(name), {method: "DELETE"}));
+          reloadOnSuccess(event.currentTarget, fetch("/api/individuals/groups/" + encodeURIComponent(name), {method: "DELETE"}));
         });
 
         group.querySelectorAll(".individual-thumb").forEach(thumb => {
-          thumb.querySelector(".thumb-rename").addEventListener("click", () => {
+          thumb.querySelector(".thumb-rename").addEventListener("click", event => {
             const newName = window.prompt("Neuer Name für diese Referenz?", name);
             if (!newName || newName === name) {
               return;
             }
-            reloadOnSuccess(fetch("/api/individuals/" + encodeURIComponent(thumb.dataset.entryId), {
+            reloadOnSuccess(event.currentTarget, fetch("/api/individuals/" + encodeURIComponent(thumb.dataset.entryId), {
               method: "PATCH",
               headers: {"Content-Type": "application/json"},
               body: JSON.stringify({name: newName}),
             }));
           });
 
-          thumb.querySelector(".thumb-delete").addEventListener("click", () => {
+          thumb.querySelector(".thumb-delete").addEventListener("click", event => {
             if (!confirm("Diese Referenz wirklich löschen?")) {
               return;
             }
-            reloadOnSuccess(fetch("/api/individuals/" + encodeURIComponent(thumb.dataset.entryId), {method: "DELETE"}));
+            reloadOnSuccess(event.currentTarget, fetch("/api/individuals/" + encodeURIComponent(thumb.dataset.entryId), {method: "DELETE"}));
           });
         });
       });

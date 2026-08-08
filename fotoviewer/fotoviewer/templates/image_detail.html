@@ -9,7 +9,7 @@
         <div id="detection_overlay">
           <img class="detail_image" id="detail_image" src="/images/{{ metadata.path }}">
         </div>
-        <button onclick="detect_objects()">Objekte erkennen</button>
+        <button id="detect_btn" onclick="detect_objects()">Objekte erkennen</button>
       </div>
 
       <aside class="metadata-card card">
@@ -34,6 +34,9 @@
     <script>
       function detect_objects() {
         const path = {{ metadata.path | tojson }};
+        const btn = document.getElementById("detect_btn");
+        btn.disabled = true;
+        btn.textContent = "Erkenne …";
         fetch("/api/images/detections?path=" + encodeURIComponent(path))
           .then(response => {
             if (!response.ok) {
@@ -71,7 +74,11 @@
               overlay.appendChild(box);
             });
           })
-          .catch(() => alert("Objekterkennung fehlgeschlagen"));
+          .catch(() => alert("Objekterkennung fehlgeschlagen"))
+          .finally(() => {
+            btn.disabled = false;
+            btn.textContent = "Objekte erkennen";
+          });
       }
 
       function tag_individual(bbox) {
