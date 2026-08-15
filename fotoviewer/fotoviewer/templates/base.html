@@ -13,13 +13,20 @@
       <header class="app-header">
         <a href="/" class="brand">📷 Foto Viewer</a>
         <nav class="main-nav">
-          <a href="/" class="{{ 'active' if active_page == 'search' }}">Suche</a>
-          <a href="/folders" class="{{ 'active' if active_page == 'folders' }}">Ordner</a>
-          <a href="/sources" class="{{ 'active' if active_page == 'sources' }}">Indizes</a>
-          <a href="/individuals" class="{{ 'active' if active_page == 'individuals' }}">Individuen</a>
-          <a href="/duplicates" class="{{ 'active' if active_page == 'duplicates' }}">Duplikate</a>
-          <a href="/filter" class="{{ 'active' if active_page == 'filter' }}">Filter</a>
-          <a href="/import" class="{{ 'active' if active_page == 'import' }}">Import</a>
+          <div class="nav-group">
+            <span class="nav-group-label">Durchsuchen</span>
+            <a href="/" class="{{ 'active' if active_page == 'search' }}">Suche</a>
+            <a href="/folders" class="{{ 'active' if active_page == 'folders' }}">Ordner</a>
+            <a href="/filter" class="{{ 'active' if active_page == 'filter' }}">Filter</a>
+          </div>
+          <div class="nav-separator"></div>
+          <div class="nav-group">
+            <span class="nav-group-label">Verwalten</span>
+            <a href="/individuals" class="{{ 'active' if active_page == 'individuals' }}">Individuen</a>
+            <a href="/duplicates" class="{{ 'active' if active_page == 'duplicates' }}">Duplikate</a>
+            <a href="/import" class="{{ 'active' if active_page == 'import' }}">Import</a>
+            <a href="/sources" class="{{ 'active' if active_page == 'sources' }}">Indizes</a>
+          </div>
         </nav>
       </header>
       <main>

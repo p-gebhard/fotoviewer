@@ -79,7 +79,28 @@ h1, h2, h3 {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    gap: 1.5rem;
+}
+
+.nav-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 1.25rem;
+}
+
+.nav-group-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    opacity: 0.7;
+}
+
+.nav-separator {
+    width: 1px;
+    height: 1.1rem;
+    background: var(--color-border);
 }
 
 .main-nav a {
@@ -95,13 +116,6 @@ h1, h2, h3 {
 .main-nav a.active {
     color: var(--color-accent);
     font-weight: 600;
-}
-
-.nav-disabled {
-    color: var(--color-text-muted);
-    font-size: 0.95rem;
-    opacity: 0.5;
-    cursor: default;
 }
 
 .back-link {
@@ -504,5 +518,9 @@ button.danger:hover {
 
     .search-row input[type="text"] {
         flex-basis: 100%;
+    }
+
+    .nav-separator {
+        display: none;
     }
 }
