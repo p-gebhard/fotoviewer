@@ -274,8 +274,7 @@ img {
     flex: 1 1 260px;
 }
 
-.metadata-card dl,
-.stat-card dl {
+.metadata-card dl {
     margin: 0;
     display: grid;
     grid-template-columns: auto 1fr;
@@ -284,12 +283,31 @@ img {
     font-family: var(--font-mono);
 }
 
-.metadata-card dt,
-.stat-card dt {
+.metadata-card dt {
     color: var(--color-text-muted);
 }
 
-.metadata-card dd,
+.metadata-card dd {
+    margin: 0;
+    word-break: break-word;
+}
+
+.stat-card dl {
+    margin: 0;
+    font-size: 0.9rem;
+    font-family: var(--font-mono);
+}
+
+.stat-card dt {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.stat-card dt:first-child {
+    margin-top: 0;
+}
+
 .stat-card dd {
     margin: 0;
     word-break: break-word;

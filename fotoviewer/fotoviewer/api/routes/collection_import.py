@@ -29,8 +29,8 @@ def start_import(
     object_detector: ObjectDetector = Depends(get_object_detector_from_request),
 ) -> dict:
     status = request.app.state.import_status
-    if status["running"]:
-        raise HTTPException(status_code=409, detail="Import läuft bereits")
+    if status["running"] or request.app.state.reindex_status["running"]:
+        raise HTTPException(status_code=409, detail="Es läuft bereits ein Indexierungsvorgang")
 
     dest_relative = "/".join(part for part in [body.destination_folder, body.new_folder_name] if part)
     with not_found_as_http_404("Invalid destination folder"):

@@ -52,6 +52,7 @@ def client(tmp_path, fake_services):
         app.state.individuals_index = fake_services["individuals_index"]
         app.state.detections_index = fake_services["detections_index"]
         app.state.import_status = {"running": False, "phase": "idle", "error": None, "copy_result": None}
+        app.state.reindex_status = {"running": False, "phase": "idle", "error": None}
         yield
 
     settings = Settings(images_path=str(tmp_path), index_dir=str(tmp_path))

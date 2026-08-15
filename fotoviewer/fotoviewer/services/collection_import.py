@@ -4,9 +4,8 @@ from pathlib import Path
 
 from fotoviewer.services.image_files import find_image_paths, invalidate
 from fotoviewer.services.image_processor import ImageProcessor
-from fotoviewer.services.indexing.detection_indexer import DetectionIndexer
-from fotoviewer.services.indexing.indexer import Indexer
 from fotoviewer.services.object_detector.object_detector import ObjectDetector
+from fotoviewer.services.reindex import run_indexers
 
 
 def copy_collection(source_path: str, destination_dir: Path) -> dict:
@@ -45,11 +44,7 @@ def run_import(
 
         invalidate(images_path)
 
-        status["phase"] = "indexing_images"
-        Indexer(image_processor.compute_image_features).index_folder(images_path, index_dir)
-
-        status["phase"] = "indexing_detections"
-        DetectionIndexer(object_detector, image_processor).index_folder(images_path, index_dir)
+        run_indexers(images_path, index_dir, image_processor, object_detector, status)
 
         status["phase"] = "done"
     except Exception as e:

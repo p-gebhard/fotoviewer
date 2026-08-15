@@ -68,4 +68,72 @@
         </dl>
       </div>
     </div>
+
+    <div class="card">
+      <h3>Bibliothek neu indizieren</h3>
+      <p class="empty-state">
+        Durchsucht die Fotobibliothek erneut und baut Such- sowie Objekt-Index komplett neu auf —
+        sinnvoll nach manuellen Änderungen im Dateisystem.
+      </p>
+      <button type="button" id="reindex_btn" onclick="start_reindex()">Jetzt neu indizieren</button>
+      <p id="reindex_status" class="empty-state"></p>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+      const reindexBtn = document.getElementById("reindex_btn");
+      const reindexStatusEl = document.getElementById("reindex_status");
+      let reindexPollHandle = null;
+
+      const REINDEX_PHASE_TEXT = {
+        idle: "",
+        starting: "Wird gestartet …",
+        indexing_images: "Baue Such-Index …",
+        indexing_detections: "Baue Objekt-Index …",
+        done: "Fertig.",
+        error: "Fehler.",
+      };
+
+      function renderReindexStatus(status) {
+        let text = REINDEX_PHASE_TEXT[status.phase] ?? status.phase;
+        if (status.phase === "error" && status.error) {
+          text = `Fehler: ${status.error}`;
+        }
+        reindexStatusEl.textContent = text;
+
+        reindexBtn.disabled = status.running;
+        if (status.running && !reindexPollHandle) {
+          reindexPollHandle = setInterval(pollReindex, 2000);
+        } else if (!status.running && reindexPollHandle) {
+          clearInterval(reindexPollHandle);
+          reindexPollHandle = null;
+        }
+      }
+
+      function pollReindex() {
+        fetch("/api/reindex/status")
+          .then(response => response.json())
+          .then(renderReindexStatus)
+          .catch(() => {});
+      }
+
+      function start_reindex() {
+        reindexBtn.disabled = true;
+        reindexStatusEl.textContent = "Wird gestartet …";
+        fetch("/api/reindex", {method: "POST"})
+          .then(response => {
+            if (!response.ok) {
+              return response.json().then(data => { throw new Error(data.detail || response.status); });
+            }
+            pollReindex();
+          })
+          .catch(error => {
+            reindexStatusEl.textContent = "Fehler: " + error.message;
+            reindexBtn.disabled = false;
+          });
+      }
+
+      pollReindex();
+    </script>
 {% endblock %}
