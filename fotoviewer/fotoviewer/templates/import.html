@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Import</h2>
+
+    <form class="card filter-form">
+      <div class="search-row">
+        <label>
+          Quellordner (absoluter Pfad auf diesem Rechner)
+          <input type="text" id="source_path" placeholder="z. B. /media/usb/DCIM">
+        </label>
+      </div>
+
+      <div class="search-row">
+        <label>
+          Zielordner
+          <select id="destination_folder">
+            <option value="">Bibliotheks-Wurzel</option>
+            {% for option in folder_options %}
+              <option value="{{ option }}">{{ option }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          Neuer Unterordner (optional)
+          <input type="text" id="new_folder_name" placeholder="z. B. Urlaub2026">
+        </label>
+        <button type="button" id="import_btn" onclick="start_import()">Import starten</button>
+      </div>
+    </form>
+
+    <p id="import_status" class="empty-state"></p>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+      const importBtn = document.getElementById("import_btn");
+      const statusEl = document.getElementById("import_status");
+      let pollHandle = null;
+
+      const PHASE_TEXT = {
+        idle: "",
+        starting: "Import wird gestartet …",
+        copying: "Kopiere Fotos …",
+        indexing_images: "Baue Such-Index …",
+        indexing_detections: "Baue Objekt-Index …",
+        done: "Fertig.",
+        error: "Fehler.",
+      };
+
+      function renderStatus(status) {
+        let text = PHASE_TEXT[status.phase] ?? status.phase;
+        if (status.phase === "done" && status.copy_result) {
+          text = `Fertig: ${status.copy_result.copied} kopiert, ${status.copy_result.skipped} übersprungen.`;
+        }
+        if (status.phase === "error" && status.error) {
+          text = `Fehler: ${status.error}`;
+        }
+        statusEl.textContent = text;
+
+        importBtn.disabled = status.running;
+        if (status.running && !pollHandle) {
+          pollHandle = setInterval(poll, 2000);
+        } else if (!status.running && pollHandle) {
+          clearInterval(pollHandle);
+          pollHandle = null;
+        }
+      }
+
+      function poll() {
+        fetch("/api/import/status")
+          .then(response => response.json())
+          .then(renderStatus)
+          .catch(() => {});
+      }
+
+      function start_import() {
+        const sourcePath = document.getElementById("source_path").value.trim();
+        if (!sourcePath) {
+          return;
+        }
+        importBtn.disabled = true;
+        statusEl.textContent = "Import wird gestartet …";
+        fetch("/api/import", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            source_path: sourcePath,
+            destination_folder: document.getElementById("destination_folder").value,
+            new_folder_name: document.getElementById("new_folder_name").value.trim(),
+          }),
+        })
+          .then(response => {
+            if (!response.ok) {
+              return response.json().then(data => { throw new Error(data.detail || response.status); });
+            }
+            poll();
+          })
+          .catch(error => {
+            statusEl.textContent = "Fehler: " + error.message;
+            importBtn.disabled = false;
+          });
+      }
+
+      poll();
+    </script>
+{% endblock %}

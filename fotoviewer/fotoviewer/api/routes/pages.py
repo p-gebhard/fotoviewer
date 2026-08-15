@@ -5,6 +5,7 @@ from fotoviewer.api.dependencies import (
     get_data_overview_dependency,
     get_duplicate_groups_dependency,
     get_folder_listing_or_404,
+    get_folder_options_dependency,
     get_image_metadata_or_404,
     get_individuals_overview_dependency,
     get_library_filter_dependency,
@@ -55,4 +56,11 @@ def individuals(request: Request, groups: list = Depends(get_individuals_overvie
 def library_filter(request: Request, result: dict = Depends(get_library_filter_dependency)):
     return request.app.state.templates.TemplateResponse(
         request, "filter.html", {"active_page": "filter", **result}
+    )
+
+
+@router.get("/import", response_class=HTMLResponse)
+def import_page(request: Request, folder_options: list = Depends(get_folder_options_dependency)):
+    return request.app.state.templates.TemplateResponse(
+        request, "import.html", {"active_page": "import", "folder_options": folder_options}
     )

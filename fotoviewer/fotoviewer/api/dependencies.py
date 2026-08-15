@@ -83,6 +83,12 @@ def get_folder_listing_or_404(path: str = "", settings: Settings = Depends(get_s
         return list_folder(settings.images_path, path)
 
 
+def get_folder_options_dependency(
+    image_index: Index = Depends(get_image_index_from_request),
+) -> list:
+    return list_folder_options(image_index)
+
+
 def get_data_overview_dependency(
     settings: Settings = Depends(get_settings),
     image_index: Index = Depends(get_image_index_from_request),

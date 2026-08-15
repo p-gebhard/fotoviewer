@@ -4,7 +4,12 @@ import pytest
 from PIL import Image
 
 from fotoviewer.services import image_files
-from fotoviewer.services.image_files import ImageNotFoundError, find_image_paths, resolve_directory_path
+from fotoviewer.services.image_files import (
+    ImageNotFoundError,
+    find_image_paths,
+    resolve_directory_path,
+    resolve_or_create_directory_path,
+)
 
 
 def make_image(path):
@@ -67,3 +72,35 @@ def test_find_image_paths_caches_result_within_ttl(tmp_path, monkeypatch):
     third = find_image_paths(str(tmp_path))
 
     assert len(third) == 2
+
+
+def test_resolve_or_create_directory_path_creates_missing_directory(tmp_path):
+    resolved = resolve_or_create_directory_path(str(tmp_path), "new/nested")
+
+    assert resolved.is_dir()
+    assert resolved == (tmp_path / "new" / "nested").resolve()
+
+
+def test_resolve_or_create_directory_path_returns_existing_directory(tmp_path):
+    sub_dir = tmp_path / "sub"
+    sub_dir.mkdir()
+
+    resolved = resolve_or_create_directory_path(str(tmp_path), "sub")
+
+    assert resolved == sub_dir.resolve()
+
+
+def test_resolve_or_create_directory_path_blocks_path_traversal(tmp_path):
+    with pytest.raises(ImageNotFoundError):
+        resolve_or_create_directory_path(str(tmp_path), "../outside_new_dir")
+
+
+def test_invalidate_clears_cached_entry(tmp_path):
+    image_files._cache.clear()
+    make_image(tmp_path / "a.jpg")
+    find_image_paths(str(tmp_path))
+    assert str(tmp_path) in image_files._cache
+
+    image_files.invalidate(str(tmp_path))
+
+    assert str(tmp_path) not in image_files._cache

@@ -34,6 +34,16 @@ def resolve_directory_path(images_path: str, relative_path: str) -> Path:
     return full_path
 
 
+def resolve_or_create_directory_path(images_path: str, relative_path: str) -> Path:
+    full_path = _resolve_within_base(images_path, relative_path)
+    full_path.mkdir(parents=True, exist_ok=True)
+    return full_path
+
+
+def invalidate(root: str) -> None:
+    _cache.pop(root, None)
+
+
 def find_image_paths(root: str) -> list[str]:
     cached = _cache.get(root)
     now = time.monotonic()

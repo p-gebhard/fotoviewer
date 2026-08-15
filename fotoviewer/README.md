@@ -32,6 +32,7 @@ Die App bindet standardmäßig nur an `127.0.0.1` und hat **keine Authentifizier
 | `/individuals` | Verwaltung der Individuen-Galerie (umbenennen, löschen) |
 | `/duplicates` | Anzeige möglicher Duplikat-Gruppen (nur Review, kein Löschen) |
 | `/filter` | Bibliothek nach Ordner, Individuum und Zeitraum filtern (siehe unten) |
+| `/import` | Fotos aus einem beliebigen Quellordner in die Bibliothek kopieren und automatisch neu indizieren |
 
 ## Modelle
 
