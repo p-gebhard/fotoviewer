@@ -28,18 +28,10 @@ async def lifespan(app: FastAPI):
     app.state.image_index.load("image", str(Path(settings.index_dir) / "image.npz"))
 
     app.state.individuals_index = Index()
-    individuals_path = Path(settings.index_dir) / "individuals.npz"
-    if individuals_path.exists():
-        app.state.individuals_index.load(INDIVIDUALS_COLLECTION, str(individuals_path))
-    else:
-        app.state.individuals_index.create(INDIVIDUALS_COLLECTION)
+    app.state.individuals_index.load_or_create(INDIVIDUALS_COLLECTION, str(Path(settings.index_dir) / "individuals.npz"))
 
     app.state.detections_index = Index()
-    detections_path = Path(settings.index_dir) / "detections.npz"
-    if detections_path.exists():
-        app.state.detections_index.load(DETECTIONS_COLLECTION, str(detections_path))
-    else:
-        app.state.detections_index.create(DETECTIONS_COLLECTION)
+    app.state.detections_index.load_or_create(DETECTIONS_COLLECTION, str(Path(settings.index_dir) / "detections.npz"))
     yield
 
 

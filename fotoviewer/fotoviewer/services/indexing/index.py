@@ -1,5 +1,8 @@
+import os
 import numpy as np
 from typing import Dict, List, Any, Optional
+
+from fotoviewer.services.similarity import cosine_scores
 
 
 class Index:
@@ -26,6 +29,12 @@ class Index:
             "files": container["files"],
             "features": container["features"],
         }
+
+    def load_or_create(self, name: str, filename: str) -> None:
+        if os.path.exists(filename):
+            self.load(name, filename)
+        else:
+            self.create(name)
 
     def save(self, name: str, filename: str) -> None:
         index = self._loaded_indices[name]
@@ -62,7 +71,7 @@ class Index:
     def search(self, name: str, embedding: np.ndarray, k: int) -> List[Dict[str, Any]]:
         catalog_features = self._loaded_indices[name]["features"]
         files = self._loaded_indices[name]["files"]
-        scores = (1 + np.dot(catalog_features, embedding.T).T[0]) / 2
+        scores = cosine_scores(catalog_features, embedding)[:, 0]
         sorted_label_indices = np.argsort(scores)[::-1][:k]
         scores = scores.astype(dtype=float)
         return [

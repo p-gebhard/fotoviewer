@@ -25,17 +25,3 @@ class ObjectDetector:
             {"label": self._model.config.id2label[label_id.item()], "score": score.item(), "bbox": box.tolist()}
             for score, label_id, box in zip(results["scores"], results["labels"], results["boxes"])
         ]
-
-
-if __name__ == "__main__":
-    from PIL import Image
-
-    from fotoviewer.services.object_detector.visualizer import render_bboxes
-
-    img_file = "/home/user/projects/fotoviewer/images/CIMG2568.JPG"
-    image = Image.open(img_file)
-    od = ObjectDetector("cuda")
-    detections = od.detect(image)
-    print(detections)
-    render_bboxes(image, detections)
-    image.save(img_file.replace(".JPG", "_boxes.JPG"))

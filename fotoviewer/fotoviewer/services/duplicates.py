@@ -1,6 +1,7 @@
 import numpy as np
 
 from fotoviewer.services.indexing.index import Index
+from fotoviewer.services.similarity import cosine_scores
 
 CHUNK_SIZE = 500
 
@@ -32,7 +33,7 @@ def find_duplicate_groups(image_index: Index, threshold: float) -> list[list[dic
         end = min(start + CHUNK_SIZE, n)
         chunk = features[start:end]
         remaining = features[start:]
-        scores = (1 + np.dot(chunk, remaining.T)) / 2
+        scores = cosine_scores(chunk, remaining)
         for local_i, global_i in enumerate(range(start, end)):
             row = scores[local_i]
             for local_j in np.where(row >= threshold)[0]:

@@ -1,6 +1,5 @@
 from typing import Any
 import numpy as np
-from PIL import Image
 from transformers import SiglipModel, SiglipProcessor
 from torch.nn.functional import normalize
 
@@ -22,11 +21,3 @@ class ImageProcessor:
         inputs = self._processor(text=text, return_tensors="pt", padding="max_length")
         text_embeds = self._model.get_text_features(**inputs).pooler_output
         return normalize(text_embeds.detach()).cpu().numpy()
-
-
-if __name__ == "__main__":
-    img_file = "/home/user/projects/fotoviewer/images/CIMG2568.JPG"
-    image = Image.open(img_file)
-    ip = ImageProcessor()
-    print(ip.compute_image_features(image))
-    print(ip.compute_text_features("a woman sitting on a camel"))

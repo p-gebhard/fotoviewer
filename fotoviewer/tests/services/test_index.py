@@ -95,3 +95,24 @@ def test_save_and_load_round_trip(tmp_path):
     assert loaded.num_features("image") == 2
     results = loaded.search("image", unit(np.array([[1.0, 0.0]])), k=1)
     assert results[0]["file"] == "a.jpg"
+
+
+def test_load_or_create_loads_existing_file(tmp_path):
+    saved = Index()
+    saved.create("image")
+    saved.add("image", "a.jpg", unit(np.array([[1.0, 0.0]])))
+    filename = tmp_path / "image.npz"
+    saved.save("image", str(filename))
+
+    index = Index()
+    index.load_or_create("image", str(filename))
+
+    assert index.num_features("image") == 1
+
+
+def test_load_or_create_creates_empty_collection_when_file_missing(tmp_path):
+    index = Index()
+    index.load_or_create("image", str(tmp_path / "does-not-exist.npz"))
+
+    assert index.exists("image")
+    assert index.num_features("image") == 0
