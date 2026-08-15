@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 from fotoviewer.services.indexing.index import Index
@@ -6,7 +8,14 @@ from fotoviewer.services.similarity import cosine_scores
 CHUNK_SIZE = 500
 
 
-def find_duplicate_groups(image_index: Index, threshold: float) -> list[list[dict]]:
+def _file_size(images_path: str, relative_path: str) -> int:
+    try:
+        return os.path.getsize(os.path.join(images_path, relative_path))
+    except OSError:
+        return 0
+
+
+def find_duplicate_groups(image_index: Index, threshold: float, images_path: str) -> list[list[dict]]:
     if not image_index.exists("image") or image_index.num_features("image") == 0:
         return []
 
@@ -53,11 +62,14 @@ def find_duplicate_groups(image_index: Index, threshold: float) -> list[list[dic
     for indices in groups.values():
         if len(indices) < 2:
             continue
-        group = sorted(
-            ({"file": str(files[i]), "score": best_score.get(i, 0.0)} for i in indices),
-            key=lambda entry: entry["score"],
-            reverse=True,
-        )
+        entries = [
+            {"file": str(files[i]), "score": best_score.get(i, 0.0), "size_bytes": _file_size(images_path, str(files[i]))}
+            for i in indices
+        ]
+        largest_size = max(entry["size_bytes"] for entry in entries)
+        for entry in entries:
+            entry["suggest_delete"] = entry["size_bytes"] < largest_size
+        group = sorted(entries, key=lambda entry: entry["score"], reverse=True)
         result.append(group)
 
     result.sort(key=lambda group: max(entry["score"] for entry in group), reverse=True)

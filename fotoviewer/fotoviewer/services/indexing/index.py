@@ -68,6 +68,18 @@ class Index:
             index["features"] = features
             index["files"] = new_files
 
+    def remove_entries(self, name: str, values_to_remove: set) -> None:
+        files = list(self._loaded_indices[name]["files"])
+        keep = [i for i, f in enumerate(files) if str(f) not in values_to_remove]
+        if not keep:
+            self.create(name)
+            return
+        kept_files = [files[i] for i in keep]
+        kept_features = self._loaded_indices[name]["features"][keep]
+        self.drop(name)
+        self.create(name)
+        self.add_batch(name, kept_files, kept_features)
+
     def search(self, name: str, embedding: np.ndarray, k: int) -> List[Dict[str, Any]]:
         catalog_features = self._loaded_indices[name]["features"]
         files = self._loaded_indices[name]["files"]

@@ -116,3 +116,43 @@ def test_load_or_create_creates_empty_collection_when_file_missing(tmp_path):
 
     assert index.exists("image")
     assert index.num_features("image") == 0
+
+
+def test_remove_entries_drops_matching_files_and_keeps_rest():
+    index = Index()
+    index.create("image")
+    index.add_batch("image", ["a.jpg", "b.jpg", "c.jpg"], np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]))
+
+    index.remove_entries("image", {"b.jpg"})
+
+    assert list(index.files("image")) == ["a.jpg", "c.jpg"]
+    assert index.features("image").tolist() == [[1.0, 0.0], [1.0, 1.0]]
+
+
+def test_remove_entries_removes_multiple_values():
+    index = Index()
+    index.create("image")
+    index.add_batch("image", ["a.jpg", "b.jpg", "c.jpg"], np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]]))
+
+    index.remove_entries("image", {"a.jpg", "c.jpg"})
+
+    assert list(index.files("image")) == ["b.jpg"]
+
+
+def test_remove_entries_empties_collection_when_all_removed():
+    index = Index()
+    index.create("image")
+    index.add("image", "a.jpg", np.array([[1.0, 0.0]]))
+
+    index.remove_entries("image", {"a.jpg"})
+
+    assert index.num_features("image") == 0
+
+
+def test_remove_entries_is_noop_on_empty_collection():
+    index = Index()
+    index.create("image")
+
+    index.remove_entries("image", {"a.jpg"})
+
+    assert index.num_features("image") == 0

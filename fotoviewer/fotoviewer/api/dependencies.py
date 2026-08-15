@@ -102,7 +102,7 @@ def get_duplicate_groups_dependency(
     settings: Settings = Depends(get_settings),
     image_index: Index = Depends(get_image_index_from_request),
 ) -> list:
-    return find_duplicate_groups(image_index, settings.duplicate_match_threshold)
+    return find_duplicate_groups(image_index, settings.duplicate_match_threshold, settings.images_path)
 
 
 def get_individuals_overview_dependency(

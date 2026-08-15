@@ -354,6 +354,21 @@ img {
 
 .duplicate-group .results-grid {
     margin-top: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.duplicate-thumb {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.duplicate-select {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
 }
 
 .individual-group-header {

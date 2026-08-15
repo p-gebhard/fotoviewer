@@ -10,14 +10,62 @@
           <h3>Gruppe {{ loop.index }} · {{ (group[0].score * 100) | round(1) }}% ähnlich</h3>
           <div class="results-grid">
             {% for entry in group %}
-              <a href="/image?path={{ entry.file | urlencode }}">
-                <img class="simimg" src="/images/{{ entry.file }}">
-              </a>
+              <div class="duplicate-thumb">
+                <a href="/image?path={{ entry.file | urlencode }}">
+                  <img class="simimg" src="/images/{{ entry.file }}">
+                </a>
+                <label class="duplicate-select">
+                  <input
+                    type="checkbox"
+                    class="duplicate-checkbox"
+                    value="{{ entry.file }}"
+                    data-size-bytes="{{ entry.size_bytes }}"
+                    {{ "checked" if entry.suggest_delete }}
+                  >
+                  {{ (entry.size_bytes / 1024 / 1024) | round(2) }} MB
+                </label>
+              </div>
             {% endfor %}
           </div>
+          <button type="button" class="danger delete-selected-btn">Ausgewählte nach .duplicates verschieben</button>
         </div>
       {% endfor %}
     {% else %}
       <p class="empty-state">Keine Duplikate gefunden.</p>
     {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+      document.querySelectorAll(".duplicate-group").forEach(group => {
+        const button = group.querySelector(".delete-selected-btn");
+        button.addEventListener("click", () => {
+          const checked = [...group.querySelectorAll(".duplicate-checkbox:checked")];
+          if (checked.length === 0) {
+            alert("Keine Fotos ausgewählt.");
+            return;
+          }
+          const totalMb = (checked.reduce((sum, cb) => sum + Number(cb.dataset.sizeBytes || 0), 0) / 1024 / 1024).toFixed(1);
+          if (!confirm(`${checked.length} Foto(s) (${totalMb} MB) nach .duplicates verschieben?`)) {
+            return;
+          }
+          button.disabled = true;
+          fetch("/api/duplicates/delete", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({paths: checked.map(cb => cb.value)}),
+          })
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(response.status);
+              }
+              location.reload();
+            })
+            .catch(() => {
+              alert("Verschieben fehlgeschlagen");
+              button.disabled = false;
+            });
+        });
+      });
+    </script>
 {% endblock %}
