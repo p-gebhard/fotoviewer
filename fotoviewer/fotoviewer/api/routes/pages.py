@@ -6,17 +6,22 @@ from fotoviewer.api.dependencies import (
     get_duplicate_groups_dependency,
     get_folder_listing_or_404,
     get_folder_options_dependency,
+    get_image_index_from_request,
     get_image_metadata_or_404,
     get_individuals_overview_dependency,
     get_library_filter_dependency,
 )
+from fotoviewer.services.indexing.index import Index
 
 router = APIRouter()
 
 
 @router.get("/", response_class=HTMLResponse)
-def index(request: Request):
-    return request.app.state.templates.TemplateResponse(request, "index.html", {"active_page": "search"})
+def index(request: Request, image_index: Index = Depends(get_image_index_from_request)):
+    index_empty = not image_index.exists("image") or image_index.num_features("image") == 0
+    return request.app.state.templates.TemplateResponse(
+        request, "index.html", {"active_page": "search", "index_empty": index_empty}
+    )
 
 
 @router.get("/image", response_class=HTMLResponse)

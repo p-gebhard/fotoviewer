@@ -14,6 +14,7 @@
   "search.button": "Suchen",
   "search.similar_button": "Ähnliche Bilder finden",
   "search.empty_hint": "Suche nach einem Motiv oder lade ein Bild hoch, um ähnliche Fotos zu finden.",
+  "search.no_index_html": "Es wurden noch keine Fotos indiziert. Den Index mit <code>uv run fotoviewer-create-index</code> oder über <a href=\"/sources\">Indizes → Jetzt neu indizieren</a> aufbauen.",
   "js.search.no_results": "Keine ähnlichen Fotos gefunden.",
   "js.search.disconnected": "Verbindung getrennt – bitte Seite neu laden.",
   "js.search.running": "Suche läuft …",

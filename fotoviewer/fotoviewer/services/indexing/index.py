@@ -81,6 +81,8 @@ class Index:
         self.add_batch(name, kept_files, kept_features)
 
     def search(self, name: str, embedding: np.ndarray, k: int) -> List[Dict[str, Any]]:
+        if self.num_features(name) == 0:
+            return []
         catalog_features = self._loaded_indices[name]["features"]
         files = self._loaded_indices[name]["files"]
         scores = cosine_scores(catalog_features, embedding)[:, 0]

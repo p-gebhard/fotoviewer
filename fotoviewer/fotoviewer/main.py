@@ -37,7 +37,9 @@ async def lifespan(app: FastAPI):
     app.state.image_processor = ImageProcessor(settings.embedding_model_name)
     app.state.object_detector = ObjectDetector(device, settings.detection_model_name, settings.detection_threshold)
     app.state.image_index = Index()
-    app.state.image_index.load("image", str(Path(settings.index_dir) / "image.npz"))
+    # Start with empty indices on a fresh install; they are built via the CLI or /sources.
+    Path(settings.index_dir).mkdir(parents=True, exist_ok=True)
+    app.state.image_index.load_or_create("image", str(Path(settings.index_dir) / "image.npz"))
 
     app.state.individuals_index = Index()
     app.state.individuals_index.load_or_create(INDIVIDUALS_COLLECTION, str(Path(settings.index_dir) / "individuals.npz"))

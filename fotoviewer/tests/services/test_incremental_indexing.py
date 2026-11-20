@@ -183,3 +183,12 @@ def test_progress_callback_reports_processed_files(tmp_path):
     index(images, out, CountingExtract(), on_progress=lambda done, total: calls.append((done, total)))
 
     assert calls == [(0, 2), (1, 2), (2, 2)]
+
+
+def test_creates_missing_output_directory(tmp_path):
+    images = tmp_path / "images"
+    make_image(images / "a.jpg")
+
+    index(images, tmp_path / "does" / "not" / "exist", CountingExtract())
+
+    assert load_files(tmp_path / "does" / "not" / "exist") == ["a.jpg"]

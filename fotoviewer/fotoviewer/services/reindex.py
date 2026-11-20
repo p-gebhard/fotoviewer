@@ -53,8 +53,9 @@ def run_indexers(
 
 
 def reload_indices(app_state, index_dir: str) -> None:
-    app_state.image_index.load(IMAGE_COLLECTION, str(Path(index_dir) / IMAGE_INDEX_FILENAME))
-    app_state.detections_index.load(DETECTIONS_COLLECTION, str(Path(index_dir) / DETECTIONS_INDEX_FILENAME))
+    # load_or_create: a failed first run may not have written the files yet.
+    app_state.image_index.load_or_create(IMAGE_COLLECTION, str(Path(index_dir) / IMAGE_INDEX_FILENAME))
+    app_state.detections_index.load_or_create(DETECTIONS_COLLECTION, str(Path(index_dir) / DETECTIONS_INDEX_FILENAME))
 
 
 def run_reindex(

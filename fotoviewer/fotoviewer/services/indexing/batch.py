@@ -70,6 +70,7 @@ def run_batch_indexing(
     if not os.path.exists(images_path):
         raise ValueError(f"Folder {images_path} does not exist")
 
+    os.makedirs(output_path, exist_ok=True)
     index_file = os.path.join(output_path, filename)
     manifest_file = manifest_path(index_file)
 

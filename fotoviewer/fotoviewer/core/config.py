@@ -2,8 +2,11 @@ from pathlib import Path
 from typing import Literal
 
 from dotenv import load_dotenv
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# The directory containing pyproject.toml and .env. Relative paths in the settings are
+# resolved against it, so the app behaves the same regardless of the working directory.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 load_dotenv(PROJECT_ROOT / ".env")
 
@@ -20,3 +23,9 @@ class Settings(BaseSettings):
     detection_threshold: float = 0.7
     device: str | None = None
     language: Literal["en", "de"] = "en"
+
+    @field_validator("images_path", "index_dir")
+    @classmethod
+    def _resolve_relative_to_project(cls, value: str) -> str:
+        path = Path(value).expanduser()
+        return str(path if path.is_absolute() else (PROJECT_ROOT / path).resolve())

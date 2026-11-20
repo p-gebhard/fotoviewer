@@ -14,6 +14,7 @@
   "search.button": "Search",
   "search.similar_button": "Find similar images",
   "search.empty_hint": "Search for a subject or upload an image to find similar photos.",
+  "search.no_index_html": "No photos have been indexed yet. Build the index with <code>uv run fotoviewer-create-index</code> or via <a href=\"/sources\">Indices → Reindex now</a>.",
   "js.search.no_results": "No similar photos found.",
   "js.search.disconnected": "Connection lost – please reload the page.",
   "js.search.running": "Searching …",

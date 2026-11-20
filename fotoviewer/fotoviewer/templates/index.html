@@ -14,13 +14,17 @@
       <div id="log" class="log"></div>
     </section>
 
+    {% if index_empty %}
+      <p class="card empty-state">{{ t("search.no_index_html") }}</p>
+    {% endif %}
+
     <div id="similar_images" class="results-grid"></div>
     <p id="empty_hint" class="empty-state">{{ t("search.empty_hint") }}</p>
 {% endblock %}
 
 {% block scripts %}
     <script>
-      const socket = new WebSocket('ws://' + location.host + '/echo');
+      const socket = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/echo");
       const textInput = document.getElementById("text_query");
       const searchBtn = document.getElementById("text_search_btn");
       const uploadBtn = document.getElementById("upload_btn");

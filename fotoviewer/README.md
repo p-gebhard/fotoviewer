@@ -7,19 +7,43 @@ Local semantic photo search with object detection. All models (SigLIP2 for text/
 Requires [uv](https://docs.astral.sh/uv/). The Python version is pinned to 3.14 via `.python-version` (there are no `torch` wheels for newer versions yet); uv downloads it automatically if needed.
 
 ```
+git clone <repository-url>
+cd fotoviewer/fotoviewer
 uv sync
-cp .env.example .env   # and adjust as needed
+cp .env.example .env   # set FOTOVIEWER_IMAGES_PATH to your photo folder
 ```
 
-`.env` is loaded automatically on startup (see [fotoviewer/core/config.py](fotoviewer/core/config.py)) and is gitignored — `.env.example` serves as a template listing all available settings.
+`.env` is loaded automatically on startup (see [fotoviewer/core/config.py](fotoviewer/core/config.py)) and is gitignored — `.env.example` serves as a template listing all available settings. Relative paths in the settings are resolved against the project directory (the one containing `pyproject.toml` and `.env`), not the current working directory.
+
+## First run
+
+1. **Build the search index** — this runs every photo through the embedding model once, which can take a while for large libraries (subsequent runs only process new or modified photos):
+
+   ```
+   uv run fotoviewer-create-index
+   ```
+
+   Optionally also build the object index used by `/filter` (see [Library filter](#library-filter-filter)):
+
+   ```
+   uv run fotoviewer-index-detections
+   ```
+
+2. **Start the app:**
+
+   ```
+   uv run uvicorn fotoviewer.main:app --reload
+   ```
+
+   The app is then available at `http://127.0.0.1:8000`.
+
+On the very first start, the model weights (several GB) are downloaded from Hugging Face. The app also starts without an index; the search page then shows a hint, and the index can be built from the app via `/sources` ("Reindex now") instead of the command line.
 
 ## Running
 
 ```
 uv run uvicorn fotoviewer.main:app --reload
 ```
-
-The app is then available at `http://127.0.0.1:8000`.
 
 By default the app only binds to `127.0.0.1` and has **no authentication** — a deliberate choice for a local single-user tool. Before binding to `0.0.0.0` or exposing it on a network, put an auth layer in front of it (e.g. a reverse proxy with basic auth).
 

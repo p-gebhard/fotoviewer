@@ -72,6 +72,7 @@ class DateCache:
         with self._lock:
             if not self._dirty:
                 return
+            os.makedirs(os.path.dirname(self._cache_file) or ".", exist_ok=True)
             tmp_path = self._cache_file + ".tmp"
             with open(tmp_path, "w") as f:
                 json.dump(self._entries, f)
