@@ -48,3 +48,22 @@ def test_reindex_status_reflects_app_state(client):
 
     assert response.status_code == 200
     assert response.json()["phase"] == "indexing_images"
+
+
+def test_start_reindex_passes_full_flag(client, monkeypatch):
+    import fotoviewer.api.routes.reindex as reindex_route
+
+    calls = []
+    monkeypatch.setattr(reindex_route, "run_reindex", lambda *args, **kwargs: calls.append(kwargs))
+    monkeypatch.setattr(reindex_route, "reload_indices", lambda *args: None)
+
+    client.post("/api/reindex?full=true")
+    client.app.state.reindex_status["running"] = False
+    client.post("/api/reindex")
+
+    import time
+    for _ in range(50):
+        if len(calls) == 2:
+            break
+        time.sleep(0.01)
+    assert [c["full"] for c in calls] == [True, False]

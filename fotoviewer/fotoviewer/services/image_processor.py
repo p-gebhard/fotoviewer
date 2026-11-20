@@ -7,6 +7,7 @@ from torch.nn.functional import normalize
 class ImageProcessor:
 
     def __init__(self, model_name: str = "google/siglip2-base-patch16-224") -> None:
+        self.model_name = model_name
         self._model = SiglipModel.from_pretrained(model_name)
         self._processor = SiglipProcessor.from_pretrained(model_name)
 

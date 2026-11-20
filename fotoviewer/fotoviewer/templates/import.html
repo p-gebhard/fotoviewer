@@ -44,12 +44,16 @@
         copying: "Kopiere Fotos …",
         indexing_images: "Baue Such-Index …",
         indexing_detections: "Baue Objekt-Index …",
+        indexing_dates: "Lese Aufnahmedaten …",
         done: "Fertig.",
         error: "Fehler.",
       };
 
       function renderStatus(status) {
         let text = PHASE_TEXT[status.phase] ?? status.phase;
+        if (status.running && status.progress && status.progress.total) {
+          text += ` ${status.progress.done} / ${status.progress.total}`;
+        }
         if (status.phase === "done" && status.copy_result) {
           text = `Fertig: ${status.copy_result.copied} kopiert, ${status.copy_result.skipped} übersprungen.`;
         }

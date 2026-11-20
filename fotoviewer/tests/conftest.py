@@ -12,6 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from fotoviewer.core.config import Settings
 from fotoviewer.main import create_app
+from fotoviewer.services.date_cache import DateCache
 from fotoviewer.services.identity import INDIVIDUALS_COLLECTION
 from fotoviewer.services.indexing.detection_indexer import DETECTIONS_COLLECTION
 from fotoviewer.services.indexing.index import Index
@@ -51,6 +52,7 @@ def client(tmp_path, fake_services):
         app.state.image_index = fake_services["image_index"]
         app.state.individuals_index = fake_services["individuals_index"]
         app.state.detections_index = fake_services["detections_index"]
+        app.state.date_cache = DateCache()
         app.state.import_status = {"running": False, "phase": "idle", "error": None, "copy_result": None}
         app.state.reindex_status = {"running": False, "phase": "idle", "error": None}
         yield

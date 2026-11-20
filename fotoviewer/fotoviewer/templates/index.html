@@ -62,7 +62,8 @@
             link.href = "/image?path=" + encodeURIComponent(image.file);
             const img = document.createElement("img");
             img.className = "simimg";
-            img.src = "/images/" + image.file;
+            img.src = "/thumbnails?path=" + encodeURIComponent(image.file);
+            img.loading = "lazy";
             link.appendChild(img);
             resultsContainer.appendChild(link);
           });

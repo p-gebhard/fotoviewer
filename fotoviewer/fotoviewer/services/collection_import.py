@@ -2,6 +2,7 @@ import os
 import shutil
 from pathlib import Path
 
+from fotoviewer.services.date_cache import DateCache
 from fotoviewer.services.image_files import find_image_paths, invalidate
 from fotoviewer.services.image_processor import ImageProcessor
 from fotoviewer.services.object_detector.object_detector import ObjectDetector
@@ -37,6 +38,7 @@ def run_import(
     image_processor: ImageProcessor,
     object_detector: ObjectDetector,
     status: dict,
+    date_cache: DateCache | None = None,
 ) -> None:
     try:
         status["phase"] = "copying"
@@ -44,7 +46,7 @@ def run_import(
 
         invalidate(images_path)
 
-        run_indexers(images_path, index_dir, image_processor, object_detector, status)
+        run_indexers(images_path, index_dir, image_processor, object_detector, status, date_cache=date_cache)
 
         status["phase"] = "done"
     except Exception as e:

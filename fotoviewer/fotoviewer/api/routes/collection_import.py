@@ -1,5 +1,4 @@
 import threading
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
@@ -14,8 +13,8 @@ from fotoviewer.schemas.import_collection import ImportRequest
 from fotoviewer.services.collection_import import run_import
 from fotoviewer.services.image_files import resolve_or_create_directory_path
 from fotoviewer.services.image_processor import ImageProcessor
-from fotoviewer.services.indexing.detection_indexer import DETECTIONS_COLLECTION
 from fotoviewer.services.object_detector.object_detector import ObjectDetector
+from fotoviewer.services.reindex import reload_indices
 
 router = APIRouter()
 
@@ -48,9 +47,9 @@ def start_import(
             image_processor,
             object_detector,
             status,
+            date_cache=request.app.state.date_cache,
         )
-        request.app.state.image_index.load("image", str(Path(settings.index_dir) / "image.npz"))
-        request.app.state.detections_index.load(DETECTIONS_COLLECTION, str(Path(settings.index_dir) / "detections.npz"))
+        reload_indices(request.app.state, settings.index_dir)
 
     threading.Thread(target=_run, daemon=True).start()
     return {"status": "started"}

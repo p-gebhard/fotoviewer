@@ -2,6 +2,7 @@ from fastapi import Depends, Request, WebSocket
 
 from fotoviewer.api.errors import not_found_as_http_404
 from fotoviewer.core.config import Settings
+from fotoviewer.services.date_cache import DateCache
 from fotoviewer.services.data_sources import get_data_overview
 from fotoviewer.services.duplicates import find_duplicate_groups
 from fotoviewer.services.folder_browser import list_folder
@@ -53,6 +54,10 @@ def get_image_index_from_request(request: Request) -> Index:
 
 def get_detections_index_from_request(request: Request) -> Index:
     return request.app.state.detections_index
+
+
+def get_date_cache_from_request(request: Request) -> DateCache:
+    return request.app.state.date_cache
 
 
 def get_image_metadata_or_404(path: str, settings: Settings = Depends(get_settings)) -> dict:
@@ -121,6 +126,7 @@ def get_library_filter_dependency(
     image_index: Index = Depends(get_image_index_from_request),
     individuals_index: Index = Depends(get_individuals_index_from_request),
     detections_index: Index = Depends(get_detections_index_from_request),
+    date_cache: DateCache = Depends(get_date_cache_from_request),
 ) -> dict:
     parsed_year_from = int(year_from) if year_from.strip().isdigit() else None
     parsed_year_to = int(year_to) if year_to.strip().isdigit() else None
@@ -135,6 +141,7 @@ def get_library_filter_dependency(
         individual=individual or None,
         year_from=parsed_year_from,
         year_to=parsed_year_to,
+        date_cache=date_cache,
     )
 
     return {

@@ -25,3 +25,5 @@ indices/*
 images/*
 
 *.pth
+
+.claude/settings.local.json

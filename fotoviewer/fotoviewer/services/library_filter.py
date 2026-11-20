@@ -3,7 +3,7 @@ from pathlib import Path
 
 from fotoviewer.services.identity import identify_embedding
 from fotoviewer.services.image_files import ImageNotFoundError
-from fotoviewer.services.image_metadata import get_image_metadata
+from fotoviewer.services.date_cache import DateCache
 from fotoviewer.services.indexing.detection_indexer import DETECTIONS_COLLECTION
 from fotoviewer.services.indexing.index import Index
 
@@ -28,9 +28,9 @@ def _matched_individuals(detections_index: Index, individuals_index: Index, name
     return matched
 
 
-def _year_of(images_path: str, file_path: str) -> int | None:
+def _year_of(date_cache: DateCache, images_path: str, file_path: str) -> int | None:
     try:
-        date_taken = get_image_metadata(images_path, file_path).get("date_taken")
+        date_taken = date_cache.get(images_path, file_path)
     except ImageNotFoundError:
         # Index may reference a file that has since been moved or deleted on disk.
         return None
@@ -42,8 +42,10 @@ def _year_of(images_path: str, file_path: str) -> int | None:
         return None
 
 
-def _in_year_range(images_path: str, file_path: str, year_from: int | None, year_to: int | None) -> bool:
-    year = _year_of(images_path, file_path)
+def _in_year_range(
+    date_cache: DateCache, images_path: str, file_path: str, year_from: int | None, year_to: int | None
+) -> bool:
+    year = _year_of(date_cache, images_path, file_path)
     if year is None:
         return False
     if year_from is not None and year < year_from:
@@ -71,6 +73,7 @@ def filter_library(
     individual: str | None = None,
     year_from: int | None = None,
     year_to: int | None = None,
+    date_cache: DateCache | None = None,
 ) -> list[str]:
     files = [str(f) for f in image_index.files("image")] if image_index.exists("image") else []
 
@@ -82,6 +85,8 @@ def filter_library(
         files = [f for f in files if f in matched]
 
     if year_from is not None or year_to is not None:
-        files = [f for f in files if _in_year_range(images_path, f, year_from, year_to)]
+        date_cache = date_cache or DateCache()
+        files = [f for f in files if _in_year_range(date_cache, images_path, f, year_from, year_to)]
+        date_cache.save()
 
     return sorted(files)

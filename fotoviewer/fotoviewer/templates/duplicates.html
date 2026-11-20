@@ -12,7 +12,7 @@
             {% for entry in group %}
               <div class="duplicate-thumb">
                 <a href="/image?path={{ entry.file | urlencode }}">
-                  <img class="simimg" src="/images/{{ entry.file }}">
+                  <img class="simimg" src="/thumbnails?path={{ entry.file | urlencode }}" loading="lazy">
                 </a>
                 <label class="duplicate-select">
                   <input

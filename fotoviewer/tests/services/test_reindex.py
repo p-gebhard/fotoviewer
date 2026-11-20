@@ -73,3 +73,43 @@ def test_run_reindex_picks_up_files_added_after_a_recent_cache_population(tmp_pa
     loaded = Index()
     loaded.load("image", str(index_dir / "image.npz"))
     assert loaded.num_features("image") == 2
+
+
+def _mocks():
+    image_processor = MagicMock()
+    image_processor.model_name = "embed"
+    image_processor.compute_image_features.return_value = np.array([[1.0, 0.0]])
+    object_detector = MagicMock()
+    object_detector.model_name = "detect"
+    object_detector.threshold = 0.7
+    object_detector.detect.return_value = []
+    return image_processor, object_detector
+
+
+def test_run_reindex_is_incremental_and_full_flag_reprocesses(tmp_path):
+    images_path = tmp_path / "library"
+    index_dir = tmp_path / "indices"
+    index_dir.mkdir()
+    make_image(images_path / "a.jpg")
+
+    image_processor, object_detector = _mocks()
+    run_reindex(str(images_path), str(index_dir), image_processor, object_detector, {"running": True})
+    assert image_processor.compute_image_features.call_count == 1
+
+    run_reindex(str(images_path), str(index_dir), image_processor, object_detector, {"running": True})
+    assert image_processor.compute_image_features.call_count == 1
+
+    run_reindex(str(images_path), str(index_dir), image_processor, object_detector, {"running": True}, full=True)
+    assert image_processor.compute_image_features.call_count == 2
+
+
+def test_run_reindex_writes_date_cache(tmp_path):
+    images_path = tmp_path / "library"
+    index_dir = tmp_path / "indices"
+    index_dir.mkdir()
+    make_image(images_path / "a.jpg")
+
+    image_processor, object_detector = _mocks()
+    run_reindex(str(images_path), str(index_dir), image_processor, object_detector, {"running": True})
+
+    assert (index_dir / "dates.json").exists()

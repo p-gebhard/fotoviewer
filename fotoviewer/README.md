@@ -4,6 +4,8 @@ Lokale semantische Fotosuche mit Objekterkennung. Alle Modelle (SigLIP2 für Tex
 
 ## Setup
 
+Voraussetzung ist [uv](https://docs.astral.sh/uv/). Die Python-Version ist über `.python-version` auf 3.14 festgelegt (für neuere Versionen gibt es noch keine `torch`-Wheels); uv lädt sie bei Bedarf selbst herunter.
+
 ```
 uv sync
 cp .env.example .env   # und bei Bedarf anpassen
@@ -28,9 +30,9 @@ Die App bindet standardmäßig nur an `127.0.0.1` und hat **keine Authentifizier
 | `/` | Semantische Text-/Bildsuche |
 | `/image?path=...` | Detailseite: Metadaten, Objekterkennung, Individuen-Tagging |
 | `/folders` | Datei-Browser über die konfigurierte Fotobibliothek |
-| `/sources` | Übersicht über Indizes, Modelle und Schwellwerte |
+| `/sources` | Übersicht über Indizes, Modelle und Schwellwerte; manuelles Neu-Indizieren der Bibliothek |
 | `/individuals` | Verwaltung der Individuen-Galerie (umbenennen, löschen) |
-| `/duplicates` | Anzeige möglicher Duplikat-Gruppen (nur Review, kein Löschen) |
+| `/duplicates` | Mögliche Duplikat-Gruppen prüfen und ausgewählte Dateien löschen (siehe unten) |
 | `/filter` | Bibliothek nach Ordner, Individuum und Zeitraum filtern (siehe unten) |
 | `/import` | Fotos aus einem beliebigen Quellordner in die Bibliothek kopieren und automatisch neu indizieren |
 
@@ -68,6 +70,21 @@ uv run fotoviewer-create-index
 uv run fotoviewer-search <bildpfad>
 ```
 
+Die Indizierung läuft **inkrementell**: Zu jedem Index (`image.npz`, `detections.npz`) wird ein Manifest (`*.npz.manifest.json`) mit Änderungszeit und Größe jedes verarbeiteten Fotos abgelegt. Bei jedem weiteren Lauf werden nur neue und geänderte Fotos durch die Modelle geschickt, Einträge gelöschter Fotos fallen heraus, alles andere wird übernommen. Unlesbare Fotos landen nicht im Manifest und werden beim nächsten Lauf erneut versucht.
+
+Komplett neu aufgebaut wird automatisch, wenn noch kein Manifest existiert (also beim ersten Lauf nach dem Update) oder sich das Modell bzw. der Erkennungs-Schwellwert geändert hat. Manuell geht das mit `--full`:
+
+```
+uv run fotoviewer-create-index --full
+uv run fotoviewer-index-detections --full
+```
+
+Alternativ lässt sich die Bibliothek auch in der App unter `/sources` („Jetzt neu indizieren“) aktualisieren, optional mit „Komplett neu aufbauen“. Der Import unter `/import` nutzt denselben inkrementellen Ablauf und verarbeitet daher nur die neu kopierten Fotos.
+
+## Duplikate löschen (`/duplicates`)
+
+Gelöschte Duplikate werden nicht endgültig entfernt, sondern in den Ordner `.duplicates/<Zeitstempel>/` innerhalb der Fotobibliothek verschoben, unter ihrem ursprünglichen relativen Pfad. Jeder Lauf schreibt zusätzlich eine `manifest.txt` mit allen verschobenen Dateien. Zum Wiederherstellen eine Datei einfach unter demselben relativen Pfad zurück in die Bibliothek verschieben. Endgültig gelöscht wird erst, wenn der `.duplicates`-Ordner manuell geleert wird.
+
 ## Bibliotheks-Filter (`/filter`)
 
 Um die gesamte Bibliothek nach Ordner, Individuum und Aufnahmejahr filterbar zu machen (statt nur einzelne Fotos per Text-/Bildsuche zu finden), läuft ein zusätzlicher, optionaler Indizierungsschritt:
@@ -76,9 +93,13 @@ Um die gesamte Bibliothek nach Ordner, Individuum und Aufnahmejahr filterbar zu 
 uv run fotoviewer-index-detections
 ```
 
-Das führt RT-DETR einmal über jedes Foto der Bibliothek und speichert nur die **Embeddings der erkannten Objekt-Ausschnitte** (keine Namen) in `detections.npz` — die eigentliche Identitäts-Zuordnung passiert bei jeder Filter-Anfrage live gegen die aktuelle Individuen-Galerie ([fotoviewer/services/identity.py](fotoviewer/services/identity.py), [fotoviewer/services/library_filter.py](fotoviewer/services/library_filter.py)). Dadurch wirkt ein neu getaggtes Individuum sofort im Filter, ohne dass `fotoviewer-index-detections` erneut laufen muss — nur wenn neue Fotos zur Bibliothek hinzukommen, muss der Befehl erneut ausgeführt werden.
+Das führt RT-DETR einmal über jedes Foto der Bibliothek und speichert nur die **Embeddings der erkannten Objekt-Ausschnitte** (keine Namen) in `detections.npz` — die eigentliche Identitäts-Zuordnung passiert bei jeder Filter-Anfrage live gegen die aktuelle Individuen-Galerie ([fotoviewer/services/identity.py](fotoviewer/services/identity.py), [fotoviewer/services/library_filter.py](fotoviewer/services/library_filter.py)). Dadurch wirkt ein neu getaggtes Individuum sofort im Filter, ohne dass `fotoviewer-index-detections` erneut laufen muss — nur wenn neue Fotos zur Bibliothek hinzukommen, muss der Befehl erneut ausgeführt werden (dank inkrementeller Indizierung werden dann nur die neuen Fotos verarbeitet).
 
-Der Zeitraum-Filter liest das Aufnahmedatum live per EXIF (kein eigener Cache) — bei sehr großen Bibliotheken kann das spürbar dauern, und Fotos ohne (verlässliches) EXIF-Datum werden bei aktivem Zeitraum-Filter ausgeschlossen statt geraten.
+Der Zeitraum-Filter liest das Aufnahmedatum (EXIF `DateTimeOriginal`, ersatzweise `DateTime`) aus dem Cache `dates.json` im Index-Verzeichnis. Der Cache wird beim Indizieren vorbefüllt, fehlende oder veraltete Einträge (geänderte Änderungszeit/Größe) werden beim Filtern nachgelesen ([fotoviewer/services/date_cache.py](fotoviewer/services/date_cache.py)). Fotos ohne (verlässliches) EXIF-Datum werden bei aktivem Zeitraum-Filter ausgeschlossen statt geraten.
+
+## Vorschaubilder
+
+Die Rasteransichten (Suche, Ordner, Filter, Duplikate) laden verkleinerte Vorschaubilder über `/thumbnails?path=...` statt der Originale. Sie werden beim ersten Aufruf erzeugt (JPEG, max. 400 px, EXIF-Drehung berücksichtigt) und unter `thumbnails/` im Index-Verzeichnis zwischengespeichert ([fotoviewer/services/thumbnails.py](fotoviewer/services/thumbnails.py)). Ändert sich ein Foto, entsteht automatisch ein neues Vorschaubild; alte Vorschaubilder bleiben liegen, der Ordner kann jederzeit gefahrlos gelöscht werden. Die Detailseite zeigt weiterhin das Original.
 
 ## Tests
 

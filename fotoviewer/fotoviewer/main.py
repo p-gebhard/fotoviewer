@@ -6,8 +6,19 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from fotoviewer.api.routes import collection_import, detection, duplicates, individuals, metadata, pages, reindex, websocket
+from fotoviewer.api.routes import (
+    collection_import,
+    detection,
+    duplicates,
+    individuals,
+    metadata,
+    pages,
+    reindex,
+    thumbnails,
+    websocket,
+)
 from fotoviewer.core.config import Settings
+from fotoviewer.services.date_cache import DATE_CACHE_FILENAME, DateCache
 from fotoviewer.services.identity import INDIVIDUALS_COLLECTION
 from fotoviewer.services.image_processor import ImageProcessor
 from fotoviewer.services.indexing.detection_indexer import DETECTIONS_COLLECTION
@@ -33,6 +44,8 @@ async def lifespan(app: FastAPI):
     app.state.detections_index = Index()
     app.state.detections_index.load_or_create(DETECTIONS_COLLECTION, str(Path(settings.index_dir) / "detections.npz"))
 
+    app.state.date_cache = DateCache(str(Path(settings.index_dir) / DATE_CACHE_FILENAME))
+
     app.state.import_status = {"running": False, "phase": "idle", "error": None, "copy_result": None}
     app.state.reindex_status = {"running": False, "phase": "idle", "error": None}
     yield
@@ -55,6 +68,7 @@ def create_app(settings: Settings | None = None, lifespan=lifespan) -> FastAPI:
     app.include_router(duplicates.router)
     app.include_router(collection_import.router)
     app.include_router(reindex.router)
+    app.include_router(thumbnails.router)
     app.include_router(websocket.router)
     return app
 

@@ -30,7 +30,7 @@
         {% for image in listing.images %}
           {% set image_path = (listing.path + "/" + image) if listing.path else image %}
           <a href="/image?path={{ image_path | urlencode }}">
-            <img class="simimg" src="/images/{{ image_path }}">
+            <img class="simimg" src="/thumbnails?path={{ image_path | urlencode }}" loading="lazy">
           </a>
         {% endfor %}
       </div>

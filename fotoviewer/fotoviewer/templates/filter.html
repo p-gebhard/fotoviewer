@@ -49,7 +49,7 @@
       <div class="results-grid">
         {% for file in files %}
           <a href="/image?path={{ file | urlencode }}">
-            <img class="simimg" src="/images/{{ file }}">
+            <img class="simimg" src="/thumbnails?path={{ file | urlencode }}" loading="lazy">
           </a>
         {% endfor %}
       </div>
