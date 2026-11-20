@@ -2,20 +2,20 @@
 
 {% block content %}
     <section class="card">
-      <h2>Suche</h2>
+      <h2>{{ t("search.title") }}</h2>
       <div class="search-row">
-        <input type="text" id="text_query" placeholder="z. B. ein Hund am Strand">
-        <button id="text_search_btn" onclick="search_by_text()">Suchen</button>
+        <input type="text" id="text_query" placeholder="{{ t('search.placeholder') }}">
+        <button id="text_search_btn" onclick="search_by_text()">{{ t("search.button") }}</button>
       </div>
       <div class="search-row">
         <input type="file" id="file" accept="image/*">
-        <button id="upload_btn" onclick="upload_image()">Ähnliche Bilder finden</button>
+        <button id="upload_btn" onclick="upload_image()">{{ t("search.similar_button") }}</button>
       </div>
       <div id="log" class="log"></div>
     </section>
 
     <div id="similar_images" class="results-grid"></div>
-    <p id="empty_hint" class="empty-state">Suche nach einem Motiv oder lade ein Bild hoch, um ähnliche Fotos zu finden.</p>
+    <p id="empty_hint" class="empty-state">{{ t("search.empty_hint") }}</p>
 {% endblock %}
 
 {% block scripts %}
@@ -52,7 +52,7 @@
           log("");
           resultsContainer.innerHTML = "";
           if (data.response.length === 0) {
-            emptyHint.textContent = "Keine ähnlichen Fotos gefunden.";
+            emptyHint.textContent = t("js.search.no_results");
             emptyHint.style.display = "";
             return;
           }
@@ -70,7 +70,7 @@
         }
       });
 
-      socket.addEventListener('close', () => log("Verbindung getrennt – bitte Seite neu laden.", true));
+      socket.addEventListener('close', () => log(t("js.search.disconnected"), true));
 
       function upload_image() {
         if (busy) {
@@ -85,7 +85,7 @@
           // Use a regex to remove data url part
           const base64String = reader.result.replace("data:", "").replace(/^.+,/, "");
           setBusy(true);
-          log("Suche läuft …");
+          log(t("js.search.running"));
           socket.send(JSON.stringify({command: "search_similar_images", image: base64String}));
         };
         reader.readAsDataURL(input.files[0]);
@@ -100,7 +100,7 @@
           return;
         }
         setBusy(true);
-        log("Suche läuft …");
+        log(t("js.search.running"));
         socket.send(JSON.stringify({command: "search_images_by_text", query: query}));
       }
 

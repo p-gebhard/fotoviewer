@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>Filter</h2>
+    <h2>{{ t("filter.title") }}</h2>
 
     <form method="get" action="/filter" class="card filter-form">
       <div class="search-row">
         <label>
-          Ordner
+          {{ t("filter.folder") }}
           <select name="folder">
-            <option value="">Alle</option>
+            <option value="">{{ t("filter.all") }}</option>
             {% for option in folder_options %}
               <option value="{{ option }}" {{ "selected" if selected.folder == option }}>{{ option }}</option>
             {% endfor %}
@@ -16,9 +16,9 @@
         </label>
 
         <label>
-          Individuum
+          {{ t("filter.individual") }}
           <select name="individual">
-            <option value="">Alle</option>
+            <option value="">{{ t("filter.all") }}</option>
             {% for option in individual_options %}
               <option value="{{ option }}" {{ "selected" if selected.individual == option }}>{{ option }}</option>
             {% endfor %}
@@ -28,24 +28,23 @@
 
       <div class="search-row">
         <label>
-          Jahr von
-          <input type="number" name="year_from" value="{{ selected.year_from }}" placeholder="z. B. 2003">
+          {{ t("filter.year_from") }}
+          <input type="number" name="year_from" value="{{ selected.year_from }}" placeholder="{{ t('filter.year_placeholder') }}">
         </label>
         <label>
-          Jahr bis
-          <input type="number" name="year_to" value="{{ selected.year_to }}" placeholder="z. B. 2003">
+          {{ t("filter.year_to") }}
+          <input type="number" name="year_to" value="{{ selected.year_to }}" placeholder="{{ t('filter.year_placeholder') }}">
         </label>
-        <button type="submit">Filtern</button>
+        <button type="submit">{{ t("filter.submit") }}</button>
       </div>
     </form>
 
     {% if selected.individual and not detections_indexed %}
       <p class="empty-state">
-        Für die Individuen-Erkennung über die gesamte Bibliothek muss einmalig <code>fotoviewer-index-detections</code>
-        laufen — bisher wurden noch keine Objekte in der Bibliothek indiziert.
+        {{ t("filter.needs_detection_index_html") }}
       </p>
     {% elif files %}
-      <p class="empty-state">{{ files | length }} Foto(s) gefunden.</p>
+      <p class="empty-state">{{ t("filter.count", count=files | length) }}</p>
       <div class="results-grid">
         {% for file in files %}
           <a href="/image?path={{ file | urlencode }}">
@@ -54,6 +53,6 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="empty-state">Keine Fotos gefunden.</p>
+      <p class="empty-state">{{ t("filter.none") }}</p>
     {% endif %}
 {% endblock %}

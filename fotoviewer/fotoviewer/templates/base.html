@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="{{ language }}">
   <head>
     <meta charset="utf-8">
     <title>{% block title %}Foto Viewer{% endblock %}</title>
@@ -14,18 +14,18 @@
         <a href="/" class="brand">📷 Foto Viewer</a>
         <nav class="main-nav">
           <div class="nav-group">
-            <span class="nav-group-label">Durchsuchen</span>
-            <a href="/" class="{{ 'active' if active_page == 'search' }}">Suche</a>
-            <a href="/folders" class="{{ 'active' if active_page == 'folders' }}">Ordner</a>
-            <a href="/filter" class="{{ 'active' if active_page == 'filter' }}">Filter</a>
+            <span class="nav-group-label">{{ t("nav.browse") }}</span>
+            <a href="/" class="{{ 'active' if active_page == 'search' }}">{{ t("nav.search") }}</a>
+            <a href="/folders" class="{{ 'active' if active_page == 'folders' }}">{{ t("nav.folders") }}</a>
+            <a href="/filter" class="{{ 'active' if active_page == 'filter' }}">{{ t("nav.filter") }}</a>
           </div>
           <div class="nav-separator"></div>
           <div class="nav-group">
-            <span class="nav-group-label">Verwalten</span>
-            <a href="/individuals" class="{{ 'active' if active_page == 'individuals' }}">Individuen</a>
-            <a href="/duplicates" class="{{ 'active' if active_page == 'duplicates' }}">Duplikate</a>
-            <a href="/import" class="{{ 'active' if active_page == 'import' }}">Import</a>
-            <a href="/sources" class="{{ 'active' if active_page == 'sources' }}">Indizes</a>
+            <span class="nav-group-label">{{ t("nav.manage") }}</span>
+            <a href="/individuals" class="{{ 'active' if active_page == 'individuals' }}">{{ t("nav.individuals") }}</a>
+            <a href="/duplicates" class="{{ 'active' if active_page == 'duplicates' }}">{{ t("nav.duplicates") }}</a>
+            <a href="/import" class="{{ 'active' if active_page == 'import' }}">{{ t("nav.import") }}</a>
+            <a href="/sources" class="{{ 'active' if active_page == 'sources' }}">{{ t("nav.indices") }}</a>
           </div>
         </nav>
       </header>
@@ -33,6 +33,18 @@
         {% block content %}{% endblock %}
       </main>
     </div>
+    <script>
+      const I18N = {{ js_messages | tojson }};
+
+      // Looks up a "js."-prefixed UI text and fills {placeholder}s from params.
+      function t(key, params) {
+        const text = I18N[key] ?? key;
+        if (!params) {
+          return text;
+        }
+        return text.replace(/\{(\w+)\}/g, (match, name) => (name in params ? params[name] : match));
+      }
+    </script>
     {% block scripts %}{% endblock %}
   </body>
 </html>

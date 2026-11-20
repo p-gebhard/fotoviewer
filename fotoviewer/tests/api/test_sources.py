@@ -8,5 +8,5 @@ def test_sources_page_renders_overview(client, fake_services):
     response = client.get("/sources")
 
     assert response.status_code == 200
-    assert "Indizes" in response.text
+    assert "Indices" in response.text
     assert "5" in response.text

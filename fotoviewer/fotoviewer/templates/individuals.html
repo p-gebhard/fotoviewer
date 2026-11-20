@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>Individuen</h2>
+    <h2>{{ t("individuals.title") }}</h2>
 
     {% if groups %}
       {% for group in groups %}
         <div class="card individual-group" data-name="{{ group.name }}">
           <div class="individual-group-header">
-            <h3>{{ group.name }} · {{ group.entries | length }} Referenz(en)</h3>
+            <h3>{{ t("individuals.group_title", name=group.name, count=group.entries | length) }}</h3>
             <div class="individual-group-actions">
               <input type="text" class="rename-input" value="{{ group.name }}">
-              <button class="rename-group-btn">Umbenennen</button>
-              <button class="danger delete-group-btn">Individuum löschen</button>
+              <button class="rename-group-btn">{{ t("individuals.rename") }}</button>
+              <button class="danger delete-group-btn">{{ t("individuals.delete_group") }}</button>
             </div>
           </div>
           <div class="individual-thumbs">
@@ -20,11 +20,11 @@
                 {% if entry.path %}
                   <img src="/api/individuals/{{ entry.id }}/thumbnail">
                 {% else %}
-                  <div class="individual-thumb-placeholder">Kein Bild</div>
+                  <div class="individual-thumb-placeholder">{{ t("individuals.no_image") }}</div>
                 {% endif %}
                 <div class="thumb-actions">
-                  <button class="thumb-rename" title="Referenz umbenennen">✎</button>
-                  <button class="danger thumb-delete" title="Referenz löschen">×</button>
+                  <button class="thumb-rename" title="{{ t('individuals.rename_reference') }}">✎</button>
+                  <button class="danger thumb-delete" title="{{ t('individuals.delete_reference') }}">×</button>
                 </div>
               </div>
             {% endfor %}
@@ -32,7 +32,7 @@
         </div>
       {% endfor %}
     {% else %}
-      <p class="empty-state">Noch keine Individuen getaggt. Auf einer Bilddetailseite Objekte erkennen und eine Box anklicken, um zu benennen.</p>
+      <p class="empty-state">{{ t("individuals.empty") }}</p>
     {% endif %}
 {% endblock %}
 
@@ -48,7 +48,7 @@
             location.reload();
           })
           .catch(() => {
-            alert("Aktion fehlgeschlagen");
+            alert(t("js.individuals.action_failed"));
             button.disabled = false;
           });
       }
@@ -69,7 +69,7 @@
         });
 
         group.querySelector(".delete-group-btn").addEventListener("click", event => {
-          if (!confirm(`Alle Referenzen für "${name}" wirklich löschen?`)) {
+          if (!confirm(t("js.individuals.confirm_delete_group", {name: name}))) {
             return;
           }
           reloadOnSuccess(event.currentTarget, fetch("/api/individuals/groups/" + encodeURIComponent(name), {method: "DELETE"}));
@@ -77,7 +77,7 @@
 
         group.querySelectorAll(".individual-thumb").forEach(thumb => {
           thumb.querySelector(".thumb-rename").addEventListener("click", event => {
-            const newName = window.prompt("Neuer Name für diese Referenz?", name);
+            const newName = window.prompt(t("js.individuals.prompt_rename"), name);
             if (!newName || newName === name) {
               return;
             }
@@ -89,7 +89,7 @@
           });
 
           thumb.querySelector(".thumb-delete").addEventListener("click", event => {
-            if (!confirm("Diese Referenz wirklich löschen?")) {
+            if (!confirm(t("js.individuals.confirm_delete_reference"))) {
               return;
             }
             reloadOnSuccess(event.currentTarget, fetch("/api/individuals/" + encodeURIComponent(thumb.dataset.entryId), {method: "DELETE"}));

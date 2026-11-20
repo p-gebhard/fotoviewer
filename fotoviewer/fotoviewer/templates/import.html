@@ -1,31 +1,31 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>Import</h2>
+    <h2>{{ t("import.title") }}</h2>
 
     <form class="card filter-form">
       <div class="search-row">
         <label>
-          Quellordner (absoluter Pfad auf diesem Rechner)
-          <input type="text" id="source_path" placeholder="z. B. /media/usb/DCIM">
+          {{ t("import.source") }}
+          <input type="text" id="source_path" placeholder="{{ t('import.source_placeholder') }}">
         </label>
       </div>
 
       <div class="search-row">
         <label>
-          Zielordner
+          {{ t("import.destination") }}
           <select id="destination_folder">
-            <option value="">Bibliotheks-Wurzel</option>
+            <option value="">{{ t("import.library_root") }}</option>
             {% for option in folder_options %}
               <option value="{{ option }}">{{ option }}</option>
             {% endfor %}
           </select>
         </label>
         <label>
-          Neuer Unterordner (optional)
-          <input type="text" id="new_folder_name" placeholder="z. B. Urlaub2026">
+          {{ t("import.new_folder") }}
+          <input type="text" id="new_folder_name" placeholder="{{ t('import.new_folder_placeholder') }}">
         </label>
-        <button type="button" id="import_btn" onclick="start_import()">Import starten</button>
+        <button type="button" id="import_btn" onclick="start_import()">{{ t("import.start") }}</button>
       </div>
     </form>
 
@@ -38,27 +38,16 @@
       const statusEl = document.getElementById("import_status");
       let pollHandle = null;
 
-      const PHASE_TEXT = {
-        idle: "",
-        starting: "Import wird gestartet …",
-        copying: "Kopiere Fotos …",
-        indexing_images: "Baue Such-Index …",
-        indexing_detections: "Baue Objekt-Index …",
-        indexing_dates: "Lese Aufnahmedaten …",
-        done: "Fertig.",
-        error: "Fehler.",
-      };
-
       function renderStatus(status) {
-        let text = PHASE_TEXT[status.phase] ?? status.phase;
+        let text = status.phase === "starting" ? t("js.import.starting") : t("js.phase." + status.phase);
         if (status.running && status.progress && status.progress.total) {
           text += ` ${status.progress.done} / ${status.progress.total}`;
         }
         if (status.phase === "done" && status.copy_result) {
-          text = `Fertig: ${status.copy_result.copied} kopiert, ${status.copy_result.skipped} übersprungen.`;
+          text = t("js.import.done", {copied: status.copy_result.copied, skipped: status.copy_result.skipped});
         }
         if (status.phase === "error" && status.error) {
-          text = `Fehler: ${status.error}`;
+          text = t("js.error", {message: status.error});
         }
         statusEl.textContent = text;
 
@@ -84,7 +73,7 @@
           return;
         }
         importBtn.disabled = true;
-        statusEl.textContent = "Import wird gestartet …";
+        statusEl.textContent = t("js.import.starting");
         fetch("/api/import", {
           method: "POST",
           headers: {"Content-Type": "application/json"},
@@ -101,7 +90,7 @@
             poll();
           })
           .catch(error => {
-            statusEl.textContent = "Fehler: " + error.message;
+            statusEl.textContent = t("js.error", {message: error.message});
             importBtn.disabled = false;
           });
       }

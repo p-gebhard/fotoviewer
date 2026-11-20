@@ -1,105 +1,113 @@
 # Foto Viewer
 
-Lokale semantische Fotosuche mit Objekterkennung. Alle Modelle (SigLIP2 für Text-/Bildsuche, RT-DETR für Objekterkennung) laufen vollständig lokal — es gibt keine Cloud-API-Anbindung. Modellgewichte werden beim ersten Start einmalig von Hugging Face heruntergeladen und danach lokal gecacht.
+Local semantic photo search with object detection. All models (SigLIP2 for text/image search, RT-DETR for object detection) run entirely locally — there is no cloud API. Model weights are downloaded once from Hugging Face on first start and cached locally afterwards.
 
 ## Setup
 
-Voraussetzung ist [uv](https://docs.astral.sh/uv/). Die Python-Version ist über `.python-version` auf 3.14 festgelegt (für neuere Versionen gibt es noch keine `torch`-Wheels); uv lädt sie bei Bedarf selbst herunter.
+Requires [uv](https://docs.astral.sh/uv/). The Python version is pinned to 3.14 via `.python-version` (there are no `torch` wheels for newer versions yet); uv downloads it automatically if needed.
 
 ```
 uv sync
-cp .env.example .env   # und bei Bedarf anpassen
+cp .env.example .env   # and adjust as needed
 ```
 
-`.env` wird automatisch beim Start geladen (siehe [fotoviewer/core/config.py](fotoviewer/core/config.py)) und ist gitignored — `.env.example` dient als Vorlage mit allen verfügbaren Werten.
+`.env` is loaded automatically on startup (see [fotoviewer/core/config.py](fotoviewer/core/config.py)) and is gitignored — `.env.example` serves as a template listing all available settings.
 
-## Starten
+## Running
 
 ```
 uv run uvicorn fotoviewer.main:app --reload
 ```
 
-App läuft dann unter `http://127.0.0.1:8000`.
+The app is then available at `http://127.0.0.1:8000`.
 
-Die App bindet standardmäßig nur an `127.0.0.1` und hat **keine Authentifizierung** — das ist für ein lokales Ein-Personen-Tool eine bewusste Entscheidung. Vor dem Binden an `0.0.0.0` oder einer Freigabe im Netzwerk sollte ein Auth-Layer (z.B. ein Reverse Proxy mit Basic Auth) davorgesetzt werden.
+By default the app only binds to `127.0.0.1` and has **no authentication** — a deliberate choice for a local single-user tool. Before binding to `0.0.0.0` or exposing it on a network, put an auth layer in front of it (e.g. a reverse proxy with basic auth).
 
-## Seiten
+## Pages
 
-| Route | Inhalt |
+| Route | Content |
 |---|---|
-| `/` | Semantische Text-/Bildsuche |
-| `/image?path=...` | Detailseite: Metadaten, Objekterkennung, Individuen-Tagging |
-| `/folders` | Datei-Browser über die konfigurierte Fotobibliothek |
-| `/sources` | Übersicht über Indizes, Modelle und Schwellwerte; manuelles Neu-Indizieren der Bibliothek |
-| `/individuals` | Verwaltung der Individuen-Galerie (umbenennen, löschen) |
-| `/duplicates` | Mögliche Duplikat-Gruppen prüfen und ausgewählte Dateien löschen (siehe unten) |
-| `/filter` | Bibliothek nach Ordner, Individuum und Zeitraum filtern (siehe unten) |
-| `/import` | Fotos aus einem beliebigen Quellordner in die Bibliothek kopieren und automatisch neu indizieren |
+| `/` | Semantic text/image search |
+| `/image?path=...` | Detail page: metadata, object detection, tagging individuals |
+| `/folders` | File browser for the configured photo library |
+| `/sources` | Overview of indices, models and thresholds; manual reindexing of the library |
+| `/individuals` | Manage the gallery of individuals (rename, delete) |
+| `/duplicates` | Review possible duplicate groups and delete selected files (see below) |
+| `/filter` | Filter the library by folder, individual and date range (see below) |
+| `/import` | Copy photos from any source folder into the library and reindex automatically |
 
-## Modelle
+## Models
 
-Alle Modelle laufen lokal über [`transformers`](https://github.com/huggingface/transformers), es gibt keine weiteren Modelle im Projekt.
+All models run locally via [`transformers`](https://github.com/huggingface/transformers); the project uses no other models.
 
-| Modell | Hugging-Face-ID (Default) | Wofür | Code |
+| Model | Hugging Face ID (default) | Purpose | Code |
 |---|---|---|---|
-| SigLIP2 | `google/siglip2-base-patch16-224` | Text-/Bild-Embeddings für die semantische Suche **und** Grundlage der Individuen-Wiedererkennung (Embedding des zugeschnittenen Bildausschnitts) | [fotoviewer/services/image_processor.py](fotoviewer/services/image_processor.py) |
-| RT-DETR | `PekingU/rtdetr_r50vd` | Objekterkennung (91 COCO-Klassen) — sowohl für die Detailseiten-Erkennung eines gespeicherten Fotos als auch für den WebSocket-Upload-Flow | [fotoviewer/services/object_detector/object_detector.py](fotoviewer/services/object_detector/object_detector.py) |
+| SigLIP2 | `google/siglip2-base-patch16-224` | Text/image embeddings for semantic search **and** the basis for recognizing individuals (embedding of the cropped detection) | [fotoviewer/services/image_processor.py](fotoviewer/services/image_processor.py) |
+| RT-DETR | `PekingU/rtdetr_r50vd` | Object detection (91 COCO classes) — both for detection on a stored photo's detail page and for the WebSocket upload flow | [fotoviewer/services/object_detector/object_detector.py](fotoviewer/services/object_detector/object_detector.py) |
 
-Beide Modellnamen sind über `FOTOVIEWER_EMBEDDING_MODEL_NAME` / `FOTOVIEWER_DETECTION_MODEL_NAME` austauschbar (siehe Konfiguration unten). Die Individuen-Wiedererkennung nutzt kein eigenes Modell, sondern ausschließlich SigLIP2 auf zugeschnittenen Bildausschnitten (siehe [fotoviewer/services/identity.py](fotoviewer/services/identity.py) und die Einschränkungen unten).
+Both model names can be swapped via `FOTOVIEWER_EMBEDDING_MODEL_NAME` / `FOTOVIEWER_DETECTION_MODEL_NAME` (see configuration below). Recognizing individuals does not use a dedicated model, only SigLIP2 on cropped detections (see [fotoviewer/services/identity.py](fotoviewer/services/identity.py) and the limitations below).
 
-## Konfiguration
+## Configuration
 
-Über Umgebungsvariablen mit Prefix `FOTOVIEWER_` (siehe [fotoviewer/core/config.py](fotoviewer/core/config.py)):
+Via environment variables prefixed with `FOTOVIEWER_` (see [fotoviewer/core/config.py](fotoviewer/core/config.py)):
 
-| Variable | Default | Bedeutung |
+| Variable | Default | Meaning |
 |---|---|---|
-| `FOTOVIEWER_IMAGES_PATH` | – (Pflichtfeld) | Pfad zur Fotobibliothek |
-| `FOTOVIEWER_INDEX_DIR` | `../indices` | Ablageort der Embedding-Indizes |
-| `FOTOVIEWER_EMBEDDING_MODEL_NAME` | `google/siglip2-base-patch16-224` | Modell für Text-/Bildsuche |
-| `FOTOVIEWER_DETECTION_MODEL_NAME` | `PekingU/rtdetr_r50vd` | Modell für Objekterkennung |
-| `FOTOVIEWER_IDENTITY_MATCH_THRESHOLD` | `0.75` | Schwellwert für Individuen-Wiedererkennung (siehe Einschränkungen unten) |
-| `FOTOVIEWER_DUPLICATE_MATCH_THRESHOLD` | `0.95` | Schwellwert für die Duplikat-Erkennung auf `/duplicates` |
-| `FOTOVIEWER_DETECTION_THRESHOLD` | `0.7` | Mindest-Score, ab dem RT-DETR eine Erkennung meldet |
+| `FOTOVIEWER_IMAGES_PATH` | – (required) | Path to the photo library |
+| `FOTOVIEWER_INDEX_DIR` | `../indices` | Where the embedding indices are stored |
+| `FOTOVIEWER_EMBEDDING_MODEL_NAME` | `google/siglip2-base-patch16-224` | Model for text/image search |
+| `FOTOVIEWER_DETECTION_MODEL_NAME` | `PekingU/rtdetr_r50vd` | Model for object detection |
+| `FOTOVIEWER_IDENTITY_MATCH_THRESHOLD` | `0.75` | Threshold for recognizing individuals (see limitations below) |
+| `FOTOVIEWER_DUPLICATE_MATCH_THRESHOLD` | `0.95` | Threshold for duplicate detection on `/duplicates` |
+| `FOTOVIEWER_DETECTION_THRESHOLD` | `0.7` | Minimum score for RT-DETR to report a detection |
+| `FOTOVIEWER_DEVICE` | – (auto) | Force `cuda` or `cpu`; leave empty for automatic detection |
+| `FOTOVIEWER_LANGUAGE` | `en` | UI language: `en` or `de` (see below) |
 
-Zusätzlich `HF_HOME`, um den Hugging-Face-Modell-Cache auf ein Laufwerk mit ausreichend Speicherplatz zu legen (Standard ist `~/.cache/huggingface`; die Modelle summieren sich auf mehrere GB).
+Additionally `HF_HOME` to put the Hugging Face model cache on a drive with enough space (default is `~/.cache/huggingface`; the models add up to several GB).
 
-## Such-Index bauen
+## Language
+
+The UI language is set via `FOTOVIEWER_LANGUAGE` (`en` or `de`) and applies to all pages, client-side messages, error messages shown in the UI and the `manifest.txt` written on duplicate cleanup. Texts live in [fotoviewer/locales/](fotoviewer/locales/) as one JSON file per language ([fotoviewer/core/i18n.py](fotoviewer/core/i18n.py)); missing keys fall back to English. Keys prefixed with `js.` are also made available to client-side JavaScript.
+
+To add a language, copy `en.json` to `<code>.json`, translate the values and add the code to `SUPPORTED_LANGUAGES` in `i18n.py` and to the `language` field in [fotoviewer/core/config.py](fotoviewer/core/config.py). The tests check that all languages define the same keys and placeholders and that every key used in a template exists.
+
+## Building the search index
 
 ```
 uv run fotoviewer-create-index
-uv run fotoviewer-search <bildpfad>
+uv run fotoviewer-search <image-path>
 ```
 
-Die Indizierung läuft **inkrementell**: Zu jedem Index (`image.npz`, `detections.npz`) wird ein Manifest (`*.npz.manifest.json`) mit Änderungszeit und Größe jedes verarbeiteten Fotos abgelegt. Bei jedem weiteren Lauf werden nur neue und geänderte Fotos durch die Modelle geschickt, Einträge gelöschter Fotos fallen heraus, alles andere wird übernommen. Unlesbare Fotos landen nicht im Manifest und werden beim nächsten Lauf erneut versucht.
+Indexing is **incremental**: next to each index (`image.npz`, `detections.npz`) a manifest (`*.npz.manifest.json`) stores the modification time and size of every processed photo. Subsequent runs only send new and modified photos through the models, entries of deleted photos are dropped, and everything else is kept. Unreadable photos are not recorded in the manifest and are retried on the next run.
 
-Komplett neu aufgebaut wird automatisch, wenn noch kein Manifest existiert (also beim ersten Lauf nach dem Update) oder sich das Modell bzw. der Erkennungs-Schwellwert geändert hat. Manuell geht das mit `--full`:
+A full rebuild happens automatically when no manifest exists yet (i.e. on the first run after upgrading) or when the model or detection threshold has changed. To force one manually, use `--full`:
 
 ```
 uv run fotoviewer-create-index --full
 uv run fotoviewer-index-detections --full
 ```
 
-Alternativ lässt sich die Bibliothek auch in der App unter `/sources` („Jetzt neu indizieren“) aktualisieren, optional mit „Komplett neu aufbauen“. Der Import unter `/import` nutzt denselben inkrementellen Ablauf und verarbeitet daher nur die neu kopierten Fotos.
+Alternatively, the library can be updated from within the app on `/sources` ("Reindex now"), optionally with "Full rebuild". The import on `/import` uses the same incremental process and therefore only processes the newly copied photos.
 
-## Duplikate löschen (`/duplicates`)
+## Deleting duplicates (`/duplicates`)
 
-Gelöschte Duplikate werden nicht endgültig entfernt, sondern in den Ordner `.duplicates/<Zeitstempel>/` innerhalb der Fotobibliothek verschoben, unter ihrem ursprünglichen relativen Pfad. Jeder Lauf schreibt zusätzlich eine `manifest.txt` mit allen verschobenen Dateien. Zum Wiederherstellen eine Datei einfach unter demselben relativen Pfad zurück in die Bibliothek verschieben. Endgültig gelöscht wird erst, wenn der `.duplicates`-Ordner manuell geleert wird.
+Deleted duplicates are not removed permanently but moved to `.duplicates/<timestamp>/` inside the photo library, under their original relative path. Each run also writes a `manifest.txt` listing all moved files. To restore a file, simply move it back into the library under the same relative path. Files are only deleted for good once the `.duplicates` folder is emptied manually.
 
-## Bibliotheks-Filter (`/filter`)
+## Library filter (`/filter`)
 
-Um die gesamte Bibliothek nach Ordner, Individuum und Aufnahmejahr filterbar zu machen (statt nur einzelne Fotos per Text-/Bildsuche zu finden), läuft ein zusätzlicher, optionaler Indizierungsschritt:
+To make the whole library filterable by folder, individual and year taken (rather than only finding individual photos via text/image search), there is an additional, optional indexing step:
 
 ```
 uv run fotoviewer-index-detections
 ```
 
-Das führt RT-DETR einmal über jedes Foto der Bibliothek und speichert nur die **Embeddings der erkannten Objekt-Ausschnitte** (keine Namen) in `detections.npz` — die eigentliche Identitäts-Zuordnung passiert bei jeder Filter-Anfrage live gegen die aktuelle Individuen-Galerie ([fotoviewer/services/identity.py](fotoviewer/services/identity.py), [fotoviewer/services/library_filter.py](fotoviewer/services/library_filter.py)). Dadurch wirkt ein neu getaggtes Individuum sofort im Filter, ohne dass `fotoviewer-index-detections` erneut laufen muss — nur wenn neue Fotos zur Bibliothek hinzukommen, muss der Befehl erneut ausgeführt werden (dank inkrementeller Indizierung werden dann nur die neuen Fotos verarbeitet).
+This runs RT-DETR once over every photo in the library and stores only the **embeddings of the detected object crops** (no names) in `detections.npz` — the actual identity matching happens live on every filter request against the current gallery of individuals ([fotoviewer/services/identity.py](fotoviewer/services/identity.py), [fotoviewer/services/library_filter.py](fotoviewer/services/library_filter.py)). As a result, a newly tagged individual takes effect in the filter immediately without rerunning `fotoviewer-index-detections` — the command only needs to run again when new photos are added to the library (thanks to incremental indexing, only the new photos are processed then).
 
-Der Zeitraum-Filter liest das Aufnahmedatum (EXIF `DateTimeOriginal`, ersatzweise `DateTime`) aus dem Cache `dates.json` im Index-Verzeichnis. Der Cache wird beim Indizieren vorbefüllt, fehlende oder veraltete Einträge (geänderte Änderungszeit/Größe) werden beim Filtern nachgelesen ([fotoviewer/services/date_cache.py](fotoviewer/services/date_cache.py)). Fotos ohne (verlässliches) EXIF-Datum werden bei aktivem Zeitraum-Filter ausgeschlossen statt geraten.
+The date range filter reads the capture date (EXIF `DateTimeOriginal`, falling back to `DateTime`) from the `dates.json` cache in the index directory. The cache is prefilled during indexing; missing or stale entries (changed modification time/size) are read on demand while filtering ([fotoviewer/services/date_cache.py](fotoviewer/services/date_cache.py)). Photos without a (reliable) EXIF date are excluded when a date range is active rather than guessed.
 
-## Vorschaubilder
+## Thumbnails
 
-Die Rasteransichten (Suche, Ordner, Filter, Duplikate) laden verkleinerte Vorschaubilder über `/thumbnails?path=...` statt der Originale. Sie werden beim ersten Aufruf erzeugt (JPEG, max. 400 px, EXIF-Drehung berücksichtigt) und unter `thumbnails/` im Index-Verzeichnis zwischengespeichert ([fotoviewer/services/thumbnails.py](fotoviewer/services/thumbnails.py)). Ändert sich ein Foto, entsteht automatisch ein neues Vorschaubild; alte Vorschaubilder bleiben liegen, der Ordner kann jederzeit gefahrlos gelöscht werden. Die Detailseite zeigt weiterhin das Original.
+The grid views (search, folders, filter, duplicates) load downscaled thumbnails via `/thumbnails?path=...` instead of the originals. They are generated on first access (JPEG, max. 400 px, EXIF orientation applied) and cached under `thumbnails/` in the index directory ([fotoviewer/services/thumbnails.py](fotoviewer/services/thumbnails.py)). When a photo changes, a new thumbnail is created automatically; old thumbnails are left behind, and the folder can be safely deleted at any time. The detail page still shows the original.
 
 ## Tests
 
@@ -107,23 +115,23 @@ Die Rasteransichten (Suche, Ordner, Filter, Duplikate) laden verkleinerte Vorsch
 uv run pytest
 ```
 
-## Bekannte Einschränkungen
+## Known limitations
 
-### Individuen-Wiedererkennung ist unzuverlässig
+### Recognizing individuals is unreliable
 
-Auf der Bild-Detailseite lässt sich eine erkannte Box mit einem Namen versehen (z.B. "Rex" statt nur "dog"). Künftige Erkennungen werden dann per Cosine-Similarity gegen die so aufgebaute Galerie von Referenz-Embeddings abgeglichen ([fotoviewer/services/identity.py](fotoviewer/services/identity.py)).
+On the image detail page, a detected box can be given a name (e.g. "Rex" instead of just "dog"). Future detections are then matched via cosine similarity against the resulting gallery of reference embeddings ([fotoviewer/services/identity.py](fotoviewer/services/identity.py)).
 
-**Das funktioniert mechanisch, ist aber in der Praxis nicht zuverlässig genug für echten Einsatz.** Bei einem Test mit einem Referenzbild ("Rex") gegen ein komplett anderes Foto mit anderen Personen und Tieren matchten *alle* elf darauf erkannten Objekte "Rex" mit Scores zwischen 0.79 und 0.85 — nur knapp unter dem Score des tatsächlichen Selbst-Matches (0.9999) und deutlich über dem Standard-Schwellwert von 0.75.
+**This works mechanically, but is not reliable enough for real use in practice.** In a test with one reference image ("Rex") against a completely different photo with other people and animals, *all* eleven objects detected on it matched "Rex" with scores between 0.79 and 0.85 — only slightly below the score of the actual self-match (0.9999) and well above the default threshold of 0.75.
 
-**Ursache:** SigLIP2 (`FOTOVIEWER_EMBEDDING_MODEL_NAME`) ist ein Allzweck-Vision-Language-Embedding, trainiert auf grobe semantische Ähnlichkeit ("das ist eine Person", "das ist ein Pferd"), nicht auf feingranulare Identitäts-Unterscheidung zwischen zwei verschiedenen Personen oder Tieren. Generische Bounding-Box-Crops landen im Embedding-Raum näher beieinander, als für zuverlässige Wiedererkennung nötig wäre — Pose, Beleuchtung und Hintergrund beeinflussen das Embedding stärker als die Identität selbst.
+**Cause:** SigLIP2 (`FOTOVIEWER_EMBEDDING_MODEL_NAME`) is a general-purpose vision-language embedding trained on coarse semantic similarity ("this is a person", "this is a horse"), not on fine-grained identity discrimination between two different people or animals. Generic bounding-box crops end up closer together in embedding space than reliable recognition would require — pose, lighting and background affect the embedding more than identity itself.
 
-**Umgesetzte Abmilderung:** Statt nur den einen ähnlichsten Referenz-Crop zu vergleichen, mittelt `identify_crop` ([fotoviewer/services/identity.py](fotoviewer/services/identity.py)) den Score über *alle* Referenzfotos eines Namens und vergleicht dann die Durchschnittswerte der Kandidaten-Individuen. Ein einzelner zufällig sehr ähnlicher Fehltreffer wird so von den übrigen, weniger ähnlichen Referenzfotos desselben Namens abgeschwächt — bei nur einer Referenz bleibt das Verhalten unverändert. Das mindert das oben beschriebene Problem, löst es aber nicht grundsätzlich: Bei durchgängig fehlklassifizierten Referenzfotos (z.B. wenn alle Referenzen eines falschen Namens zufällig ähnlich aussehen) bleibt die Fehlerkennung bestehen.
+**Implemented mitigation:** Instead of comparing only the single most similar reference crop, `identify_crop` ([fotoviewer/services/identity.py](fotoviewer/services/identity.py)) averages the score over *all* reference photos of a name and then compares the averages of the candidate individuals. A single, coincidentally very similar false match is thus diluted by the other, less similar reference photos of the same name — with only one reference, behavior is unchanged. This reduces the problem described above but does not solve it fundamentally: with consistently misclassified reference photos (e.g. when all references of a wrong name happen to look similar), the false recognition remains.
 
-**Weitere mögliche Schritte** (bisher nicht umgesetzt):
-- Schwellwert deutlich anheben (z.B. 0.95+) — riskiert dann False Negatives bei echten Wiedererkennungen in anderer Pose/Beleuchtung.
-- Mindestanzahl an Referenzfotos pro Individuum erzwingen, bevor ein Name überhaupt als Match infrage kommt.
-- Dedizierte Embeddings für Personen (Gesichtserkennung) ergänzen — SigLIP2 ist dafür nicht das richtige Werkzeug, würde aber eine zusätzliche Modell-Dependency bedeuten.
+**Further possible steps** (not implemented yet):
+- Raise the threshold significantly (e.g. 0.95+) — at the risk of false negatives for genuine matches in a different pose/lighting.
+- Require a minimum number of reference photos per individual before a name is considered as a match at all.
+- Add dedicated embeddings for people (face recognition) — SigLIP2 is not the right tool for this, but it would mean an additional model dependency.
 
-### Objekterkennung ist auf 91 COCO-Klassen begrenzt
+### Object detection is limited to 91 COCO classes
 
-RT-DETR erkennt nur die festen COCO-Kategorien (z.B. `person`, `dog`, `horse`). Objekte außerhalb dieser Liste (z.B. Kamele) werden der nächstliegenden bekannten Klasse zugeordnet statt korrekt benannt.
+RT-DETR only recognizes the fixed COCO categories (e.g. `person`, `dog`, `horse`). Objects outside this list (e.g. camels) are assigned to the closest known class instead of being named correctly.

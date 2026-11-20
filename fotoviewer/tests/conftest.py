@@ -44,7 +44,14 @@ def fake_services():
 
 
 @pytest.fixture
-def client(tmp_path, fake_services):
+def language():
+    """UI language of the test app; pinned so a local .env cannot change test results.
+    Override per test with @pytest.mark.parametrize("language", ["de"])."""
+    return "en"
+
+
+@pytest.fixture
+def client(tmp_path, fake_services, language):
     @asynccontextmanager
     async def fake_lifespan(app):
         app.state.image_processor = fake_services["image_processor"]
@@ -57,7 +64,7 @@ def client(tmp_path, fake_services):
         app.state.reindex_status = {"running": False, "phase": "idle", "error": None}
         yield
 
-    settings = Settings(images_path=str(tmp_path), index_dir=str(tmp_path))
+    settings = Settings(images_path=str(tmp_path), index_dir=str(tmp_path), language=language)
     app = create_app(settings=settings, lifespan=fake_lifespan)
 
     with TestClient(app) as test_client:

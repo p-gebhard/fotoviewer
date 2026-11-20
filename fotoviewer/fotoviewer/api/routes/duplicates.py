@@ -20,7 +20,7 @@ def delete_duplicates(
     image_index: Index = Depends(get_image_index_from_request),
     detections_index: Index = Depends(get_detections_index_from_request),
 ) -> dict:
-    result = move_to_trash(settings.images_path, body.paths)
+    result = move_to_trash(settings.images_path, body.paths, request.app.state.translator)
 
     moved = set(result["moved"])
     if moved:

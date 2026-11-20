@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <a href="/" class="back-link">← Zurück</a>
+    <a href="/" class="back-link">{{ t("detail.back") }}</a>
     <h2 class="filename">{{ metadata.path }}</h2>
 
     <div class="detail-layout">
@@ -9,21 +9,21 @@
         <div id="detection_overlay">
           <img class="detail_image" id="detail_image" src="/images/{{ metadata.path }}">
         </div>
-        <button id="detect_btn" onclick="detect_objects()">Objekte erkennen</button>
+        <button id="detect_btn" onclick="detect_objects()">{{ t("detail.detect_button") }}</button>
       </div>
 
       <aside class="metadata-card card">
         <dl>
-          <dt>Abmessungen</dt>
+          <dt>{{ t("detail.dimensions") }}</dt>
           <dd>{{ metadata.width }} × {{ metadata.height }}</dd>
-          <dt>Dateigröße</dt>
+          <dt>{{ t("detail.file_size") }}</dt>
           <dd>{{ (metadata.file_size_bytes / 1024) | round(1) }} KB</dd>
-          <dt>Format</dt>
+          <dt>{{ t("detail.format") }}</dt>
           <dd>{{ metadata.format or "-" }}</dd>
-          <dt>Aufnahmedatum</dt>
+          <dt>{{ t("detail.date_taken") }}</dt>
           <dd>{{ metadata.date_taken or "-" }}</dd>
           {% set camera = [metadata.camera_make, metadata.camera_model] | select | join(" ") %}
-          <dt>Kamera</dt>
+          <dt>{{ t("detail.camera") }}</dt>
           <dd>{{ camera if camera else "-" }}</dd>
         </dl>
       </aside>
@@ -36,7 +36,7 @@
         const path = {{ metadata.path | tojson }};
         const btn = document.getElementById("detect_btn");
         btn.disabled = true;
-        btn.textContent = "Erkenne …";
+        btn.textContent = t("js.detail.detecting");
         fetch("/api/images/detections?path=" + encodeURIComponent(path))
           .then(response => {
             if (!response.ok) {
@@ -65,7 +65,7 @@
               box.addEventListener("click", () => {
                 if (detection.identity) {
                   const percent = Math.round(detection.identity_score * 100);
-                  if (!confirm(`Bereits erkannt als "${detection.identity}" (${percent}%). Trotzdem neu taggen?`)) {
+                  if (!confirm(t("js.detail.confirm_retag", {name: detection.identity, percent: percent}))) {
                     return;
                   }
                 }
@@ -74,15 +74,15 @@
               overlay.appendChild(box);
             });
           })
-          .catch(() => alert("Objekterkennung fehlgeschlagen"))
+          .catch(() => alert(t("js.detail.detect_failed")))
           .finally(() => {
             btn.disabled = false;
-            btn.textContent = "Objekte erkennen";
+            btn.textContent = t("js.detail.detect_button");
           });
       }
 
       function tag_individual(bbox) {
-        const name = window.prompt("Name für dieses Objekt?");
+        const name = window.prompt(t("js.detail.prompt_name"));
         if (!name) {
           return;
         }
@@ -97,7 +97,7 @@
             }
             detect_objects();
           })
-          .catch(() => alert("Benennen fehlgeschlagen"));
+          .catch(() => alert(t("js.detail.tag_failed")));
       }
     </script>
 {% endblock %}

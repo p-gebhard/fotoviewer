@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,3 +19,4 @@ class Settings(BaseSettings):
     duplicate_match_threshold: float = 0.95
     detection_threshold: float = 0.7
     device: str | None = None
+    language: Literal["en", "de"] = "en"

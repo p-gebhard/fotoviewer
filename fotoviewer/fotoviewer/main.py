@@ -18,6 +18,7 @@ from fotoviewer.api.routes import (
     websocket,
 )
 from fotoviewer.core.config import Settings
+from fotoviewer.core.i18n import Translator
 from fotoviewer.services.date_cache import DATE_CACHE_FILENAME, DateCache
 from fotoviewer.services.identity import INDIVIDUALS_COLLECTION
 from fotoviewer.services.image_processor import ImageProcessor
@@ -56,7 +57,13 @@ def create_app(settings: Settings | None = None, lifespan=lifespan) -> FastAPI:
 
     app = FastAPI(lifespan=lifespan)
     app.state.settings = settings
+    app.state.translator = Translator(settings.language)
     app.state.templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+    app.state.templates.env.globals.update(
+        t=app.state.translator,
+        language=settings.language,
+        js_messages=app.state.translator.js_messages(),
+    )
 
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
     app.mount("/images", StaticFiles(directory=settings.images_path), name="images")

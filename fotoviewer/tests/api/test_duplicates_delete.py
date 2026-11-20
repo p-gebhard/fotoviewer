@@ -39,7 +39,7 @@ def test_delete_duplicates_reflected_immediately_on_sources_page(client, fake_se
     response = client.get("/sources")
 
     assert response.status_code == 200
-    match = re.search(r"Einträge</dt>\s*<dd>(\d+)</dd>", response.text)
+    match = re.search(r"Entries</dt>\s*<dd>(\d+)</dd>", response.text)
     assert match and match.group(1) == "0"
 
 

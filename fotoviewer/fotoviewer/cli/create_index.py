@@ -7,8 +7,8 @@ from fotoviewer.services.reindex import image_model_key
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Baut den Such-Index (nur neue/geänderte Fotos).")
-    parser.add_argument("--full", action="store_true", help="Index komplett neu aufbauen")
+    parser = argparse.ArgumentParser(description="Build the search index (only new/modified photos).")
+    parser.add_argument("--full", action="store_true", help="rebuild the index from scratch")
     args = parser.parse_args()
 
     settings = Settings()

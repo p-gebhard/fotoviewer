@@ -13,9 +13,9 @@ from fotoviewer.services.reindex import detection_model_key, warm_date_cache
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Baut den Objekt-Index und den Datums-Cache für /filter (nur neue/geänderte Fotos)."
+        description="Build the object index and date cache for /filter (only new/modified photos)."
     )
-    parser.add_argument("--full", action="store_true", help="Index komplett neu aufbauen")
+    parser.add_argument("--full", action="store_true", help="rebuild the index from scratch")
     args = parser.parse_args()
 
     settings = Settings()

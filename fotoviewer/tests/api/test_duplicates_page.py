@@ -22,4 +22,4 @@ def test_duplicates_page_shows_empty_state_when_no_duplicates(client):
     response = client.get("/duplicates")
 
     assert response.status_code == 200
-    assert "Keine Duplikate gefunden" in response.text
+    assert "No duplicates found" in response.text

@@ -29,7 +29,7 @@ def start_import(
 ) -> dict:
     status = request.app.state.import_status
     if status["running"] or request.app.state.reindex_status["running"]:
-        raise HTTPException(status_code=409, detail="Es läuft bereits ein Indexierungsvorgang")
+        raise HTTPException(status_code=409, detail=request.app.state.translator("errors.indexing_running"))
 
     dest_relative = "/".join(part for part in [body.destination_folder, body.new_folder_name] if part)
     with not_found_as_http_404("Invalid destination folder"):

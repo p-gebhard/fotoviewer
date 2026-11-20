@@ -1,86 +1,84 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>Indizes &amp; Datenquellen</h2>
+    <h2>{{ t("sources.title") }}</h2>
 
     <div class="stat-grid">
       <div class="stat-card card">
-        <h3>Fotobibliothek</h3>
+        <h3>{{ t("sources.library") }}</h3>
         <dl>
-          <dt>Pfad</dt>
+          <dt>{{ t("sources.path") }}</dt>
           <dd>{{ overview.images_path }}</dd>
-          <dt>Dateien auf der Platte</dt>
+          <dt>{{ t("sources.files_on_disk") }}</dt>
           <dd>{{ overview.total_files_on_disk }}</dd>
         </dl>
       </div>
 
       <div class="stat-card card">
-        <h3>Such-Index</h3>
+        <h3>{{ t("sources.search_index") }}</h3>
         <dl>
-          <dt>Datei</dt>
+          <dt>{{ t("sources.file") }}</dt>
           <dd>{{ overview.image_index.path }}</dd>
-          <dt>Einträge</dt>
+          <dt>{{ t("sources.entries") }}</dt>
           <dd>{{ overview.image_index.num_entries }}</dd>
-          <dt>Größe</dt>
+          <dt>{{ t("sources.size") }}</dt>
           <dd>{{ (overview.image_index.size_bytes / 1024 / 1024) | round(1) if overview.image_index.size_bytes else "-" }} MB</dd>
-          <dt>Zuletzt geändert</dt>
+          <dt>{{ t("sources.last_modified") }}</dt>
           <dd>{{ overview.image_index.last_modified or "-" }}</dd>
         </dl>
       </div>
 
       <div class="stat-card card">
-        <h3>Individuen-Galerie</h3>
+        <h3>{{ t("sources.individuals_gallery") }}</h3>
         <dl>
-          <dt>Datei</dt>
+          <dt>{{ t("sources.file") }}</dt>
           <dd>{{ overview.individuals_index.path }}</dd>
-          <dt>Referenz-Embeddings</dt>
+          <dt>{{ t("sources.reference_embeddings") }}</dt>
           <dd>{{ overview.individuals_index.num_entries }}</dd>
-          <dt>Eindeutige Namen</dt>
+          <dt>{{ t("sources.unique_names") }}</dt>
           <dd>{{ overview.individuals_index.num_unique_names }}</dd>
-          <dt>Zuletzt geändert</dt>
+          <dt>{{ t("sources.last_modified") }}</dt>
           <dd>{{ overview.individuals_index.last_modified or "-" }}</dd>
         </dl>
       </div>
 
       <div class="stat-card card">
-        <h3>Detections-Index</h3>
+        <h3>{{ t("sources.detections_index") }}</h3>
         <dl>
-          <dt>Datei</dt>
+          <dt>{{ t("sources.file") }}</dt>
           <dd>{{ overview.detections_index.path }}</dd>
-          <dt>Erkannte Objekte</dt>
+          <dt>{{ t("sources.detected_objects") }}</dt>
           <dd>{{ overview.detections_index.num_entries }}</dd>
-          <dt>Zuletzt geändert</dt>
+          <dt>{{ t("sources.last_modified") }}</dt>
           <dd>{{ overview.detections_index.last_modified or "-" }}</dd>
         </dl>
       </div>
 
       <div class="stat-card card">
-        <h3>Modelle</h3>
+        <h3>{{ t("sources.models") }}</h3>
         <dl>
-          <dt>Text-/Bildsuche</dt>
+          <dt>{{ t("sources.model_search") }}</dt>
           <dd>{{ overview.embedding_model_name }}</dd>
-          <dt>Objekterkennung</dt>
+          <dt>{{ t("sources.model_detection") }}</dt>
           <dd>{{ overview.detection_model_name }}</dd>
-          <dt>Wiedererkennungs-Schwellwert</dt>
+          <dt>{{ t("sources.identity_threshold") }}</dt>
           <dd>{{ overview.identity_match_threshold }}</dd>
-          <dt>Duplikat-Schwellwert</dt>
+          <dt>{{ t("sources.duplicate_threshold") }}</dt>
           <dd>{{ overview.duplicate_match_threshold }}</dd>
         </dl>
       </div>
     </div>
 
     <div class="card">
-      <h3>Bibliothek neu indizieren</h3>
+      <h3>{{ t("sources.reindex_title") }}</h3>
       <p class="empty-state">
-        Durchsucht die Fotobibliothek erneut und aktualisiert Such- und Objekt-Index — sinnvoll nach
-        manuellen Änderungen im Dateisystem. Dabei werden nur neue und geänderte Fotos verarbeitet,
-        Einträge gelöschter Fotos werden entfernt.
+        {{ t("sources.reindex_description") }}
       </p>
       <label class="duplicate-select">
         <input type="checkbox" id="reindex_full">
-        Komplett neu aufbauen (alle Fotos neu verarbeiten)
+        {{ t("sources.reindex_full") }}
       </label>
-      <button type="button" id="reindex_btn" onclick="start_reindex()">Jetzt neu indizieren</button>
+      <button type="button" id="reindex_btn" onclick="start_reindex()">{{ t("sources.reindex_button") }}</button>
       <p id="reindex_status" class="empty-state"></p>
     </div>
 {% endblock %}
@@ -91,23 +89,13 @@
       const reindexStatusEl = document.getElementById("reindex_status");
       let reindexPollHandle = null;
 
-      const REINDEX_PHASE_TEXT = {
-        idle: "",
-        starting: "Wird gestartet …",
-        indexing_images: "Baue Such-Index …",
-        indexing_detections: "Baue Objekt-Index …",
-        indexing_dates: "Lese Aufnahmedaten …",
-        done: "Fertig.",
-        error: "Fehler.",
-      };
-
       function renderReindexStatus(status) {
-        let text = REINDEX_PHASE_TEXT[status.phase] ?? status.phase;
+        let text = t("js.phase." + status.phase);
         if (status.running && status.progress && status.progress.total) {
           text += ` ${status.progress.done} / ${status.progress.total}`;
         }
         if (status.phase === "error" && status.error) {
-          text = `Fehler: ${status.error}`;
+          text = t("js.error", {message: status.error});
         }
         reindexStatusEl.textContent = text;
 
@@ -129,7 +117,7 @@
 
       function start_reindex() {
         reindexBtn.disabled = true;
-        reindexStatusEl.textContent = "Wird gestartet …";
+        reindexStatusEl.textContent = t("js.phase.starting");
         const full = document.getElementById("reindex_full").checked;
         fetch("/api/reindex" + (full ? "?full=true" : ""), {method: "POST"})
           .then(response => {
@@ -139,7 +127,7 @@
             pollReindex();
           })
           .catch(error => {
-            reindexStatusEl.textContent = "Fehler: " + error.message;
+            reindexStatusEl.textContent = t("js.error", {message: error.message});
             reindexBtn.disabled = false;
           });
       }
