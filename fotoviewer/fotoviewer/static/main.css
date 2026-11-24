@@ -270,8 +270,130 @@ img {
     white-space: nowrap;
 }
 
-.metadata-card {
+.detail-sidebar {
     flex: 1 1 260px;
+    min-width: 0;
+}
+
+.detail-actions,
+.edit-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.edit-buttons {
+    margin-top: 0.75rem;
+}
+
+button.secondary {
+    background: var(--color-bg);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+button.secondary:hover {
+    background: var(--color-bg-subtle);
+    border-color: var(--color-text-muted);
+}
+
+.edit-panel h3 {
+    font-size: 0.95rem;
+}
+
+.edit-group + .edit-group {
+    margin-top: 0.75rem;
+}
+
+.edit-group-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.edit-slider {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    font-size: 0.85rem;
+}
+
+.edit-slider output {
+    font-family: var(--font-mono);
+    color: var(--color-text-muted);
+}
+
+.edit-slider input[type="range"] {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin: 0.1rem 0 0.35rem;
+    accent-color: var(--color-accent);
+}
+
+.ai-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.ai-tools button {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+
+.ai-tools small {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+.mask-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.5;
+    cursor: crosshair;
+    touch-action: none;
+    border-radius: var(--radius);
+}
+
+.mask-panel {
+    margin: 0.5rem 0;
+    padding: 0.75rem;
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius);
+}
+
+.mask-panel .edit-hint {
+    margin-top: 0;
+}
+
+.ai-steps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.ai-steps button {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+}
+
+.edit-hint {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0;
+}
+
+#edit_compare_btn {
+    touch-action: none;
+    user-select: none;
 }
 
 .metadata-card dl {

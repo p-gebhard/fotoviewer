@@ -12,6 +12,7 @@ from fotoviewer.api.dependencies import (
     get_library_filter_dependency,
 )
 from fotoviewer.services.indexing.index import Index
+from fotoviewer.services.restoration import MAX_OUTPUT_MEGAPIXELS
 
 router = APIRouter()
 
@@ -26,7 +27,15 @@ def index(request: Request, image_index: Index = Depends(get_image_index_from_re
 
 @router.get("/image", response_class=HTMLResponse)
 def image_detail(request: Request, metadata: dict = Depends(get_image_metadata_or_404)):
-    return request.app.state.templates.TemplateResponse(request, "image_detail.html", {"metadata": metadata})
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "image_detail.html",
+        {
+            "metadata": metadata,
+            "restoration_tools": request.app.state.restorer.tool_overview(),
+            "max_output_megapixels": MAX_OUTPUT_MEGAPIXELS,
+        },
+    )
 
 
 @router.get("/folders", response_class=HTMLResponse)

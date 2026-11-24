@@ -8,25 +8,102 @@
       <div class="detail-image-wrap">
         <div id="detection_overlay">
           <img class="detail_image" id="detail_image" src="/images/{{ metadata.path }}">
+          <canvas id="mask_canvas" class="mask-canvas" hidden></canvas>
         </div>
-        <button id="detect_btn" onclick="detect_objects()">{{ t("detail.detect_button") }}</button>
+        <div class="detail-actions">
+          <button id="detect_btn" onclick="detect_objects()">{{ t("detail.detect_button") }}</button>
+          <button id="edit_btn" class="secondary" onclick="open_editor()">{{ t("detail.edit_button") }}</button>
+        </div>
       </div>
 
-      <aside class="metadata-card card">
-        <dl>
-          <dt>{{ t("detail.dimensions") }}</dt>
-          <dd>{{ metadata.width }} × {{ metadata.height }}</dd>
-          <dt>{{ t("detail.file_size") }}</dt>
-          <dd>{{ (metadata.file_size_bytes / 1024) | round(1) }} KB</dd>
-          <dt>{{ t("detail.format") }}</dt>
-          <dd>{{ metadata.format or "-" }}</dd>
-          <dt>{{ t("detail.date_taken") }}</dt>
-          <dd>{{ metadata.date_taken or "-" }}</dd>
-          {% set camera = [metadata.camera_make, metadata.camera_model] | select | join(" ") %}
-          <dt>{{ t("detail.camera") }}</dt>
-          <dd>{{ camera if camera else "-" }}</dd>
-        </dl>
-      </aside>
+      <div class="detail-sidebar">
+        <section class="card edit-panel" id="edit_panel" hidden>
+          <h3>{{ t("enhance.title") }}</h3>
+          <div class="edit-group">
+            <div class="edit-group-label">{{ t("enhance.ai_tools") }}</div>
+            <div class="ai-tools">
+              {% for tool in restoration_tools %}
+                <button type="button" class="secondary ai-tool" data-tool="{{ tool.key }}" data-scale="{{ tool.scale }}"
+                        title="{{ t('enhance.tool_hint.' ~ tool.key) }}"
+                        onclick="{{ 'start_mask_mode()' if tool.mode == 'inpaint' else 'start_restoration(this.dataset.tool)' }}">
+                  {{ t("js.restore.tool." ~ tool.key) }}
+                  {% if not tool.downloaded %}<small>{{ t("enhance.download_hint", size=tool.size_mb) }}</small>{% endif %}
+                </button>
+              {% endfor %}
+            </div>
+            <label class="edit-slider">
+              <span class="edit-slider-name">{{ t("enhance.face_strength") }}</span>
+              <output id="face_strength_value">70</output>
+              <input type="range" id="face_strength" min="0" max="1" step="0.05" value="0.7"
+                     oninput="document.getElementById('face_strength_value').textContent = Math.round(this.value * 100)">
+            </label>
+            <div class="mask-panel" id="mask_panel" hidden>
+              <p class="edit-hint">{{ t("enhance.mask_hint") }}</p>
+              <label class="edit-slider">
+                <span class="edit-slider-name">{{ t("enhance.brush_size") }}</span>
+                <output id="brush_size_value">40</output>
+                <input type="range" id="brush_size" min="5" max="150" step="1" value="40"
+                       oninput="document.getElementById('brush_size_value').textContent = this.value">
+              </label>
+              <div class="edit-buttons">
+                <button type="button" onclick="apply_mask()">{{ t("enhance.mask_apply") }}</button>
+                <button type="button" class="secondary" onclick="clear_mask()">{{ t("enhance.mask_clear") }}</button>
+                <button type="button" class="secondary" onclick="stop_mask_mode()">{{ t("enhance.mask_cancel") }}</button>
+              </div>
+            </div>
+            <p class="log" id="restore_log"></p>
+            <div class="ai-steps" id="ai_steps" hidden>
+              <span id="ai_steps_text"></span>
+              <button type="button" class="secondary" onclick="discard_ai_steps()">{{ t("enhance.discard_ai") }}</button>
+            </div>
+            <p class="edit-hint">{{ t("enhance.ai_hint") }}</p>
+          </div>
+          {% set groups = [
+            ("enhance.group_light", [("exposure", -2, 2, 0.05), ("contrast", -1, 1, 0.01), ("highlights", -1, 1, 0.01), ("shadows", -1, 1, 0.01)]),
+            ("enhance.group_color", [("temperature", -1, 1, 0.01), ("tint", -1, 1, 0.01), ("saturation", -1, 1, 0.01), ("vibrance", -1, 1, 0.01)]),
+            ("enhance.group_detail", [("sharpen", 0, 1, 0.01)]),
+          ] %}
+          {% for group_key, sliders in groups %}
+            <div class="edit-group">
+              <div class="edit-group-label">{{ t(group_key) }}</div>
+              {% for name, low, high, step in sliders %}
+                <label class="edit-slider">
+                  <span class="edit-slider-name">{{ t("enhance." ~ name) }}</span>
+                  <output id="edit_value_{{ name }}">0</output>
+                  <input type="range" name="{{ name }}" min="{{ low }}" max="{{ high }}" step="{{ step }}" value="0">
+                </label>
+              {% endfor %}
+            </div>
+          {% endfor %}
+          <div class="edit-buttons">
+            <button type="button" class="secondary" id="edit_auto_btn" onclick="auto_adjust()">{{ t("enhance.auto") }}</button>
+            <button type="button" class="secondary" onclick="reset_adjustments()">{{ t("enhance.reset") }}</button>
+            <button type="button" class="secondary" id="edit_compare_btn">{{ t("enhance.compare") }}</button>
+          </div>
+          <div class="edit-buttons">
+            <button type="button" id="edit_save_btn" onclick="save_edited_copy()">{{ t("enhance.save") }}</button>
+            <button type="button" class="secondary" onclick="close_editor()">{{ t("enhance.close") }}</button>
+          </div>
+          <p class="log" id="edit_log"></p>
+          <p class="edit-hint">{{ t("enhance.hint") }}</p>
+        </section>
+
+        <aside class="metadata-card card">
+          <dl>
+            <dt>{{ t("detail.dimensions") }}</dt>
+            <dd>{{ metadata.width }} × {{ metadata.height }}</dd>
+            <dt>{{ t("detail.file_size") }}</dt>
+            <dd>{{ (metadata.file_size_bytes / 1024) | round(1) }} KB</dd>
+            <dt>{{ t("detail.format") }}</dt>
+            <dd>{{ metadata.format or "-" }}</dd>
+            <dt>{{ t("detail.date_taken") }}</dt>
+            <dd>{{ metadata.date_taken or "-" }}</dd>
+            {% set camera = [metadata.camera_make, metadata.camera_model] | select | join(" ") %}
+            <dt>{{ t("detail.camera") }}</dt>
+            <dd>{{ camera if camera else "-" }}</dd>
+          </dl>
+        </aside>
+      </div>
     </div>
 {% endblock %}
 
@@ -99,5 +176,363 @@
           })
           .catch(() => alert(t("js.detail.tag_failed")));
       }
+
+      // --- Editing: sliders render a server-side preview; saving writes a new file. ---
+
+      const IMAGE_PATH = {{ metadata.path | tojson }};
+      const MAX_OUTPUT_PIXELS = {{ max_output_megapixels }} * 1e6;
+      // Intermediate result of the AI steps applied so far (null = edit the original).
+      let working = null;
+      let restorePoll = null;
+      const ORIGINAL_SRC = document.getElementById("detail_image").src;
+      const sliders = Array.from(document.querySelectorAll("#edit_panel input[type=range]"));
+      let previewUrl = null;
+      let previewInFlight = false;
+      let previewPending = false;
+      let previewTimer = null;
+
+      function current_adjustments() {
+        return Object.fromEntries(sliders.map(slider => [slider.name, parseFloat(slider.value)]));
+      }
+
+      function is_identity(adjustments) {
+        return Object.values(adjustments).every(value => value === 0);
+      }
+
+      function is_edited() {
+        return working !== null || !is_identity(current_adjustments());
+      }
+
+      // --- AI tools: run as a background job on the server, chained via `working`. ---
+
+      function current_size() {
+        return working
+          ? {width: working.width, height: working.height}
+          : {width: {{ metadata.width }}, height: {{ metadata.height }}};
+      }
+
+      function set_ai_buttons_disabled(disabled) {
+        const {width, height} = current_size();
+        document.querySelectorAll(".ai-tool").forEach(btn => {
+          const scale = parseInt(btn.dataset.scale, 10);
+          btn.disabled = disabled || width * height * scale * scale > MAX_OUTPUT_PIXELS;
+        });
+        document.getElementById("edit_save_btn").disabled = disabled;
+      }
+
+      function update_ai_steps() {
+        const box = document.getElementById("ai_steps");
+        box.hidden = !working;
+        if (working) {
+          const names = working.steps.map(step => t("js.restore.tool." + step)).join(" → ");
+          document.getElementById("ai_steps_text").textContent = t("js.restore.steps", {steps: names});
+        }
+        set_ai_buttons_disabled(false);
+      }
+
+      function show_restore_status(status) {
+        const log = document.getElementById("restore_log");
+        const progress = status.progress || {};
+        if (status.phase === "downloading") {
+          const percent = progress.total ? Math.round(progress.done / progress.total * 100) : 0;
+          log.textContent = t("js.restore.downloading", {percent: percent});
+        } else if (status.phase === "processing") {
+          log.textContent = t("js.restore.processing", {done: progress.done ?? 0, total: progress.total ?? 0});
+        } else if (status.phase === "error") {
+          log.textContent = status.error_key
+            ? t("js.restore.error." + status.error_key)
+            : t("js.error", {message: status.error});
+        } else if (["starting", "loading", "storing", "done"].includes(status.phase)) {
+          log.textContent = t("js.restore." + status.phase);
+        }
+      }
+
+      async function start_restoration(tool, extra = {}) {
+        const log = document.getElementById("restore_log");
+        set_ai_buttons_disabled(true);
+        log.textContent = t("js.restore.starting");
+        try {
+          const response = await fetch("/api/images/restore", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+              path: IMAGE_PATH,
+              tool: tool,
+              working_id: working && working.id,
+              strength: parseFloat(document.getElementById("face_strength").value),
+              ...extra,
+            }),
+          });
+          if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
+            throw new Error(typeof body.detail === "string" ? body.detail : response.status);
+          }
+          poll_restoration();
+        } catch (e) {
+          log.textContent = t("js.error", {message: e.message});
+          set_ai_buttons_disabled(false);
+        }
+      }
+
+      function poll_restoration() {
+        clearTimeout(restorePoll);
+        restorePoll = setTimeout(async () => {
+          let status;
+          try {
+            status = await (await fetch("/api/images/restore/status")).json();
+          } catch (e) {
+            poll_restoration();
+            return;
+          }
+          show_restore_status(status);
+          if (status.running) {
+            poll_restoration();
+            return;
+          }
+          if (status.phase === "done" && status.result && status.path === IMAGE_PATH) {
+            working = status.result;
+            // The model is downloaded now; drop the download hint.
+            document.querySelectorAll(`.ai-tool[data-tool="${status.tool}"] small`).forEach(el => el.remove());
+            schedule_preview(0);
+          }
+          update_ai_steps();
+        }, 700);
+      }
+
+      // --- Object removal: paint a mask on a canvas laid over the photo. ---
+
+      const maskCanvas = document.getElementById("mask_canvas");
+      const maskContext = maskCanvas.getContext("2d");
+      let maskPainting = false;
+      let maskLastPoint = null;
+
+      function start_mask_mode() {
+        const img = document.getElementById("detail_image");
+        // Mask resolution = displayed image; the server scales it to the photo's size.
+        maskCanvas.width = img.naturalWidth;
+        maskCanvas.height = img.naturalHeight;
+        clear_mask();
+        maskCanvas.hidden = false;
+        document.getElementById("mask_panel").hidden = false;
+        set_ai_buttons_disabled(true);
+      }
+
+      function stop_mask_mode() {
+        maskCanvas.hidden = true;
+        maskPainting = false;
+        document.getElementById("mask_panel").hidden = true;
+        set_ai_buttons_disabled(false);
+      }
+
+      function clear_mask() {
+        maskContext.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+      }
+
+      function canvas_point(event) {
+        const rect = maskCanvas.getBoundingClientRect();
+        return {
+          x: (event.clientX - rect.left) / rect.width * maskCanvas.width,
+          y: (event.clientY - rect.top) / rect.height * maskCanvas.height,
+          scale: maskCanvas.width / rect.width,
+        };
+      }
+
+      function paint_to(point) {
+        const from = maskLastPoint || point;
+        maskContext.strokeStyle = maskContext.fillStyle = "#ff3b30";
+        maskContext.lineCap = maskContext.lineJoin = "round";
+        maskContext.lineWidth = parseFloat(document.getElementById("brush_size").value) * point.scale;
+        maskContext.beginPath();
+        maskContext.moveTo(from.x, from.y);
+        maskContext.lineTo(point.x + 0.01, point.y);
+        maskContext.stroke();
+        maskLastPoint = point;
+      }
+
+      maskCanvas.addEventListener("pointerdown", event => {
+        maskPainting = true;
+        maskLastPoint = null;
+        maskCanvas.setPointerCapture(event.pointerId);
+        paint_to(canvas_point(event));
+      });
+      maskCanvas.addEventListener("pointermove", event => {
+        if (maskPainting) {
+          paint_to(canvas_point(event));
+        }
+      });
+      ["pointerup", "pointercancel"].forEach(type => maskCanvas.addEventListener(type, () => {
+        maskPainting = false;
+      }));
+
+      function apply_mask() {
+        const mask = maskCanvas.toDataURL("image/png");
+        stop_mask_mode();
+        start_restoration("inpaint", {mask: mask});
+      }
+
+      function discard_ai_steps() {
+        working = null;
+        document.getElementById("restore_log").textContent = "";
+        update_ai_steps();
+        schedule_preview(0);
+      }
+
+      function show_slider_value(slider) {
+        const value = parseFloat(slider.value);
+        const text = slider.name === "exposure" ? value.toFixed(2) : Math.round(value * 100).toString();
+        document.getElementById("edit_value_" + slider.name).textContent = value > 0 ? "+" + text : text;
+      }
+
+      function show_image(src) {
+        document.getElementById("detail_image").src = src;
+      }
+
+      function open_editor() {
+        document.getElementById("edit_panel").hidden = false;
+        document.getElementById("edit_btn").hidden = true;
+        // Detection boxes refer to the original's pixel coordinates, not the preview's.
+        document.querySelectorAll("#detection_overlay .bbox").forEach(el => el.remove());
+        document.getElementById("detect_btn").disabled = true;
+        update_ai_steps();
+        document.getElementById("edit_panel").scrollIntoView({behavior: "smooth", block: "nearest"});
+      }
+
+      function close_editor() {
+        stop_mask_mode();
+        working = null;
+        update_ai_steps();
+        reset_adjustments();
+        document.getElementById("edit_panel").hidden = true;
+        document.getElementById("edit_btn").hidden = false;
+        document.getElementById("detect_btn").disabled = false;
+        document.getElementById("edit_log").textContent = "";
+      }
+
+      function reset_adjustments() {
+        sliders.forEach(slider => {
+          slider.value = 0;
+          show_slider_value(slider);
+        });
+        schedule_preview(0);
+      }
+
+      function schedule_preview(delay = 120) {
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(update_preview, delay);
+      }
+
+      // At most one preview request at a time; changes made meanwhile are rendered afterwards.
+      async function update_preview() {
+        if (previewInFlight) {
+          previewPending = true;
+          return;
+        }
+        const adjustments = current_adjustments();
+        if (is_identity(adjustments) && !working) {
+          show_image(ORIGINAL_SRC);
+          return;
+        }
+        previewInFlight = true;
+        try {
+          const response = await fetch("/api/images/enhance/preview", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({path: IMAGE_PATH, adjustments: adjustments, working_id: working && working.id}),
+          });
+          if (!response.ok) {
+            throw new Error(response.status);
+          }
+          const url = URL.createObjectURL(await response.blob());
+          if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+          }
+          previewUrl = url;
+          if (is_edited()) {
+            show_image(previewUrl);
+          }
+        } catch (e) {
+          document.getElementById("edit_log").textContent = t("js.enhance.failed");
+        } finally {
+          previewInFlight = false;
+          if (previewPending) {
+            previewPending = false;
+            update_preview();
+          }
+        }
+      }
+
+      async function auto_adjust() {
+        const btn = document.getElementById("edit_auto_btn");
+        btn.disabled = true;
+        try {
+          const params = new URLSearchParams({path: IMAGE_PATH});
+          if (working) {
+            params.set("working_id", working.id);
+          }
+          const response = await fetch("/api/images/enhance/auto?" + params);
+          if (!response.ok) {
+            throw new Error(response.status);
+          }
+          const values = await response.json();
+          sliders.forEach(slider => {
+            slider.value = values[slider.name] ?? 0;
+            show_slider_value(slider);
+          });
+          schedule_preview(0);
+        } catch (e) {
+          document.getElementById("edit_log").textContent = t("js.enhance.failed");
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      async function save_edited_copy() {
+        const btn = document.getElementById("edit_save_btn");
+        const log = document.getElementById("edit_log");
+        btn.disabled = true;
+        log.textContent = t("js.enhance.saving");
+        try {
+          const response = await fetch("/api/images/enhance/save", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({path: IMAGE_PATH, adjustments: current_adjustments(), working_id: working && working.id}),
+          });
+          if (!response.ok) {
+            throw new Error(response.status);
+          }
+          const data = await response.json();
+          log.textContent = t("js.enhance.saved", {path: data.path}) + " ";
+          const link = document.createElement("a");
+          link.href = "/image?path=" + encodeURIComponent(data.path);
+          link.textContent = t("js.enhance.open_copy");
+          log.appendChild(link);
+        } catch (e) {
+          log.textContent = t("js.enhance.failed");
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      sliders.forEach(slider => {
+        slider.addEventListener("input", () => {
+          show_slider_value(slider);
+          schedule_preview();
+        });
+        slider.addEventListener("dblclick", () => {
+          slider.value = 0;
+          show_slider_value(slider);
+          schedule_preview(0);
+        });
+      });
+
+      const compareBtn = document.getElementById("edit_compare_btn");
+      compareBtn.addEventListener("pointerdown", () => show_image(ORIGINAL_SRC));
+      ["pointerup", "pointerleave", "pointercancel"].forEach(type =>
+        compareBtn.addEventListener(type, () => {
+          if (previewUrl && is_edited()) {
+            show_image(previewUrl);
+          }
+        })
+      );
     </script>
 {% endblock %}

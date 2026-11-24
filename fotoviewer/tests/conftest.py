@@ -13,6 +13,9 @@ if str(PROJECT_ROOT) not in sys.path:
 from fotoviewer.core.config import Settings
 from fotoviewer.main import create_app
 from fotoviewer.services.date_cache import DateCache
+from fotoviewer.services.enhance import PhotoEnhancer
+from fotoviewer.services.restoration import LoadedModel, Restorer
+from fotoviewer.services.working_images import WorkingImages
 from fotoviewer.services.identity import INDIVIDUALS_COLLECTION
 from fotoviewer.services.indexing.detection_indexer import DETECTIONS_COLLECTION
 from fotoviewer.services.indexing.index import Index
@@ -43,6 +46,44 @@ def fake_services():
     }
 
 
+def fake_model_loader(weights_path, device):
+    """Stands in for spandrel: an "AI model" that inverts the image (scale 1) or repeats
+    pixels (upscaling tools, scale taken from the weights file name)."""
+    import torch.nn.functional as F
+
+    scale = 4 if "x4" in weights_path.name else 2 if "x2" in weights_path.name else 1
+    if scale == 1:
+        # *rest: inpainting models also receive the mask.
+        return LoadedModel(fn=lambda x, *rest: 1 - x)
+    return LoadedModel(fn=lambda x: F.interpolate(x, scale_factor=scale, mode="nearest"), scale=scale)
+
+
+def fake_downloader(tool, target, on_progress=None):
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(b"fake weights")
+
+
+def fake_face_detector_factory(weights_path):
+    """Finds one face (in FFHQ layout, half size) in every image of at least 300×250 px."""
+    from fotoviewer.services.faces import FFHQ_TEMPLATE
+
+    def detect(rgb):
+        return [FFHQ_TEMPLATE * 0.5 + 20] if rgb.shape[0] >= 250 and rgb.shape[1] >= 300 else []
+
+    return detect
+
+
+@pytest.fixture
+def restorer(tmp_path):
+    return Restorer(
+        "cpu",
+        str(tmp_path / "models"),
+        loader=fake_model_loader,
+        downloader=fake_downloader,
+        face_detector_factory=fake_face_detector_factory,
+    )
+
+
 @pytest.fixture
 def language():
     """UI language of the test app; pinned so a local .env cannot change test results.
@@ -51,7 +92,7 @@ def language():
 
 
 @pytest.fixture
-def client(tmp_path, fake_services, language):
+def client(tmp_path, fake_services, language, restorer):
     @asynccontextmanager
     async def fake_lifespan(app):
         app.state.image_processor = fake_services["image_processor"]
@@ -60,6 +101,8 @@ def client(tmp_path, fake_services, language):
         app.state.individuals_index = fake_services["individuals_index"]
         app.state.detections_index = fake_services["detections_index"]
         app.state.date_cache = DateCache()
+        app.state.photo_enhancer = PhotoEnhancer("cpu", WorkingImages(str(tmp_path / ".edits")))
+        app.state.restorer = restorer
         app.state.import_status = {"running": False, "phase": "idle", "error": None, "copy_result": None}
         app.state.reindex_status = {"running": False, "phase": "idle", "error": None}
         yield

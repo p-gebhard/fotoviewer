@@ -17,6 +17,8 @@ dependencies = [
     "tqdm",
     "torchvision>=0.28.0",
     "python-dotenv",
+    "spandrel>=0.4.2",
+    "opencv-python-headless>=5.1.0.95",
 ]
 
 [dependency-groups]

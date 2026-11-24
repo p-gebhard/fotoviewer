@@ -52,7 +52,7 @@ By default the app only binds to `127.0.0.1` and has **no authentication** — a
 | Route | Content |
 |---|---|
 | `/` | Semantic text/image search |
-| `/image?path=...` | Detail page: metadata, object detection, tagging individuals |
+| `/image?path=...` | Detail page: metadata, object detection, tagging individuals, photo editing |
 | `/folders` | File browser for the configured photo library |
 | `/sources` | Overview of indices, models and thresholds; manual reindexing of the library |
 | `/individuals` | Manage the gallery of individuals (rename, delete) |
@@ -62,7 +62,7 @@ By default the app only binds to `127.0.0.1` and has **no authentication** — a
 
 ## Models
 
-All models run locally via [`transformers`](https://github.com/huggingface/transformers); the project uses no other models.
+All models run locally. Search and detection use [`transformers`](https://github.com/huggingface/transformers); the optional AI restoration tools on the detail page use separate models loaded via [spandrel](https://github.com/chaiNNer-org/spandrel) (see [Editing photos](#editing-photos)).
 
 | Model | Hugging Face ID (default) | Purpose | Code |
 |---|---|---|---|
@@ -86,6 +86,7 @@ Via environment variables prefixed with `FOTOVIEWER_` (see [fotoviewer/core/conf
 | `FOTOVIEWER_DETECTION_THRESHOLD` | `0.7` | Minimum score for RT-DETR to report a detection |
 | `FOTOVIEWER_DEVICE` | – (auto) | Force `cuda` or `cpu`; leave empty for automatic detection |
 | `FOTOVIEWER_LANGUAGE` | `en` | UI language: `en` or `de` (see below) |
+| `FOTOVIEWER_MODEL_DIR` | `~/.cache/fotoviewer/models` | Weights of the AI restoration tools, downloaded on first use (see [Editing photos](#editing-photos)) |
 
 Additionally `HF_HOME` to put the Hugging Face model cache on a drive with enough space (default is `~/.cache/huggingface`; the models add up to several GB).
 
@@ -132,6 +133,37 @@ The date range filter reads the capture date (EXIF `DateTimeOriginal`, falling b
 ## Thumbnails
 
 The grid views (search, folders, filter, duplicates) load downscaled thumbnails via `/thumbnails?path=...` instead of the originals. They are generated on first access (JPEG, max. 400 px, EXIF orientation applied) and cached under `thumbnails/` in the index directory ([fotoviewer/services/thumbnails.py](fotoviewer/services/thumbnails.py)). When a photo changes, a new thumbnail is created automatically; old thumbnails are left behind, and the folder can be safely deleted at any time. The detail page still shows the original.
+
+## Editing photos
+
+The detail page has an **Edit photo** panel with classic adjustments: exposure, contrast, highlights, shadows, temperature, tint, saturation, vibrance and sharpening. **Auto** suggests values from the image statistics (gray-world white balance, brightening underexposed photos as far as the highlights allow, highlight/shadow recovery, contrast from the tonal range); they can be fine-tuned afterwards. Slider changes render a downscaled preview; "Hold to compare" shows the original.
+
+**Save as copy** applies the adjustments at full resolution and writes `<name>_edited.<ext>` next to the original (numbered if it exists; BMP is saved as PNG). The original is never modified. EXIF data and the color profile are kept, the orientation is baked into the pixels. An incremental reindex is started afterwards so the copy shows up in search.
+
+The sliders involve no models — the adjustments are plain tensor operations ([fotoviewer/services/enhance.py](fotoviewer/services/enhance.py)) that run on the GPU when available (same device as the models, see `FOTOVIEWER_DEVICE`) and otherwise on the CPU; very large photos that do not fit into GPU memory fall back to the CPU automatically. Highlights/shadows use an edge-aware base layer (fast guided filter), so there are no halos along edges.
+
+### AI tools
+
+Above the sliders, the panel offers AI restoration tools (hover a button for a short description). Each runs as a background job on the full-resolution photo; the result becomes the base for the sliders, and tools can be chained (e.g. denoise → upscale ×2). "Discard AI steps" returns to the original. Intermediate results are stored as PNG under `edits/` in the index directory and deleted automatically after a day.
+
+| Tool | Model | Weights | License | Notes |
+|---|---|---|---|---|
+| Denoise | SCUNet (`scunet_color_real_psnr`) | 72 MB | Apache-2.0 | Trained on real camera noise |
+| Reduce blur | NAFNet (GoPro, width64) | 272 MB | MIT | Motion blur only; cannot fix strong blur or missed focus |
+| Remove JPEG artifacts | FBCNN (color) | 288 MB | Apache-2.0 | For heavily compressed photos |
+| Brighten night shot | Retinexformer (LOL-v2 real) | 7 MB | MIT | Only for very dark photos — blows out normally exposed ones |
+| AI retouch | Retinexformer (MIT-Adobe FiveK) | 7 MB | MIT | Light and color like an expert retoucher |
+| Upscale ×2 / ×4 | Real-ESRGAN (x2plus / x4plus) | 67 MB each | BSD-3-Clause | Result limited to 100 megapixels |
+| Enhance faces | GFPGAN v1.4 + YuNet face detector | 349 MB | Apache-2.0 / MIT | Adjustable strength; can slightly change facial features |
+| Remove object | LaMa (big-lama) | 206 MB | Apache-2.0 | Paint over the object on the photo, then "Remove" |
+
+**Enhance faces** detects faces with OpenCV's YuNet (five landmarks), aligns each to the 512×512 FFHQ layout, restores it with GFPGAN and pastes it back with a feathered mask ([fotoviewer/services/faces.py](fotoviewer/services/faces.py)). The strength slider blends between the original (0) and the restored face (1, default 0.7); full strength makes faces sharper but can make them look smoothed or slightly different from the real person. Very small faces are skipped. GFPGAN was trained on the FFHQ dataset, which is licensed for non-commercial use only — fine for a private photo library, but keep it in mind for anything else.
+
+**Remove object** shows a canvas over the photo to paint the area to remove (brush size adjustable). Only a crop around the mask with surrounding context is sent to LaMa (downscaled to at most 1024 px if needed); in the photo, only the painted pixels — slightly grown and feathered — are replaced, so the rest keeps full sharpness ([fotoviewer/services/inpainting.py](fotoviewer/services/inpainting.py)). Works best for objects in front of structured or uniform backgrounds; large objects in front of complex scenes are filled with plausible but invented content.
+
+Weights are downloaded on first use of a tool to `FOTOVIEWER_MODEL_DIR` from the authors' GitHub releases or Hugging Face (NAFNet: a mirror of the official weights; LaMa: the converted checkpoint from lama-cleaner) and verified against pinned SHA256 checksums ([fotoviewer/services/restoration.py](fotoviewer/services/restoration.py)). A model is loaded onto the GPU only for the duration of a job and released afterwards, so it does not permanently take GPU memory away from search and detection. Photos are processed in 512 px tiles with overlap (no visible seams); on GPU out-of-memory the tile size is reduced, finally falling back to the CPU. The Retinexformer tools need the whole image to estimate the illumination, so they run on a downscaled copy (max. 1024 px) and the correction is transferred to full resolution with a guided filter, keeping all detail. All models run in float32 — half precision produces NaNs on GTX 16xx cards.
+
+Typical durations on a GTX 1660 (6 GB): retouch/night shot, enhance faces and remove object ~1–2 s, denoise/reduce blur/JPEG artifacts 10–50 s for 12–18 MP photos, upscale ×2 of a 5 MP photo ~16 s. On the CPU, expect several minutes.
 
 ## Tests
 

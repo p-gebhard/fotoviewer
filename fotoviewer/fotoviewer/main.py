@@ -1,3 +1,4 @@
+import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from fotoviewer.api.routes import (
     collection_import,
     detection,
     duplicates,
+    enhance,
     individuals,
     metadata,
     pages,
@@ -20,6 +22,9 @@ from fotoviewer.api.routes import (
 from fotoviewer.core.config import Settings
 from fotoviewer.core.i18n import Translator
 from fotoviewer.services.date_cache import DATE_CACHE_FILENAME, DateCache
+from fotoviewer.services.enhance import PhotoEnhancer
+from fotoviewer.services.restoration import Restorer
+from fotoviewer.services.working_images import WORKING_DIRNAME, WorkingImages
 from fotoviewer.services.identity import INDIVIDUALS_COLLECTION
 from fotoviewer.services.image_processor import ImageProcessor
 from fotoviewer.services.indexing.detection_indexer import DETECTIONS_COLLECTION
@@ -47,6 +52,10 @@ async def lifespan(app: FastAPI):
     app.state.detections_index = Index()
     app.state.detections_index.load_or_create(DETECTIONS_COLLECTION, str(Path(settings.index_dir) / "detections.npz"))
 
+    working_images = WorkingImages(str(Path(settings.index_dir) / WORKING_DIRNAME))
+    working_images.cleanup()
+    app.state.photo_enhancer = PhotoEnhancer(device, working_images)
+    app.state.restorer = Restorer(device, settings.model_dir)
     app.state.date_cache = DateCache(str(Path(settings.index_dir) / DATE_CACHE_FILENAME))
 
     app.state.import_status = {"running": False, "phase": "idle", "error": None, "copy_result": None}
@@ -60,6 +69,9 @@ def create_app(settings: Settings | None = None, lifespan=lifespan) -> FastAPI:
     app = FastAPI(lifespan=lifespan)
     app.state.settings = settings
     app.state.translator = Translator(settings.language)
+    # Only one AI restoration job at a time — they need a lot of GPU memory.
+    app.state.restore_status = {"running": False, "phase": "idle", "error": None, "result": None}
+    app.state.restore_lock = threading.Lock()
     app.state.templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
     app.state.templates.env.globals.update(
         t=app.state.translator,
@@ -78,6 +90,7 @@ def create_app(settings: Settings | None = None, lifespan=lifespan) -> FastAPI:
     app.include_router(collection_import.router)
     app.include_router(reindex.router)
     app.include_router(thumbnails.router)
+    app.include_router(enhance.router)
     app.include_router(websocket.router)
     return app
 

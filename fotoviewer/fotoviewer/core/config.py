@@ -23,8 +23,10 @@ class Settings(BaseSettings):
     detection_threshold: float = 0.7
     device: str | None = None
     language: Literal["en", "de"] = "en"
+    # Weights of the AI restoration models (downloaded on first use).
+    model_dir: str = "~/.cache/fotoviewer/models"
 
-    @field_validator("images_path", "index_dir")
+    @field_validator("images_path", "index_dir", "model_dir")
     @classmethod
     def _resolve_relative_to_project(cls, value: str) -> str:
         path = Path(value).expanduser()

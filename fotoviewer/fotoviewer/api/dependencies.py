@@ -5,6 +5,7 @@ from fotoviewer.core.config import Settings
 from fotoviewer.services.date_cache import DateCache
 from fotoviewer.services.data_sources import get_data_overview
 from fotoviewer.services.duplicates import find_duplicate_groups
+from fotoviewer.services.enhance import PhotoEnhancer
 from fotoviewer.services.folder_browser import list_folder
 from fotoviewer.services.image_detection import detect_objects_in_file
 from fotoviewer.services.image_metadata import get_image_metadata
@@ -58,6 +59,10 @@ def get_detections_index_from_request(request: Request) -> Index:
 
 def get_date_cache_from_request(request: Request) -> DateCache:
     return request.app.state.date_cache
+
+
+def get_photo_enhancer_from_request(request: Request) -> PhotoEnhancer:
+    return request.app.state.photo_enhancer
 
 
 def get_image_metadata_or_404(path: str, settings: Settings = Depends(get_settings)) -> dict:
